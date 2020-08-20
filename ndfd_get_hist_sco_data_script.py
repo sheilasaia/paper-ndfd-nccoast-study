@@ -57,6 +57,7 @@ exec(open((functions_dir_path + "get_sco_ndfd_data.py")).read())
 exec(open((functions_dir_path + "aggregate_sco_ndfd_var_data.py")).read())
 exec(open((functions_dir_path + "tidy_sco_ndfd_data.py")).read())
 exec(open((functions_dir_path + "append_list_as_row.py")).read())
+exec(open((functions_dir_path + "get_var_col_name.py")).read())
 
 
 # %% test functions
@@ -130,7 +131,7 @@ qpf_data_pd = pandas.DataFrame(columns = ['index', 'y_index', 'x_index', 'qpf_va
 data_available_pd = pandas.DataFrame(columns = ['datetime_uct_str', 'status'])
 
 # %% loop!
-for date in range(0, 5): #len(datetime_list_pd)):
+for date in range(258, len(datetime_list_pd)):
     # grab datetime
     temp_datetime_uct_str = datetime_list_pd['datetime_uct_str'][date]
 
