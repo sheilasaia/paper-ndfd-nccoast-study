@@ -131,7 +131,7 @@ qpf_data_pd = pandas.DataFrame(columns = ['index', 'y_index', 'x_index', 'qpf_va
 data_available_pd = pandas.DataFrame(columns = ['datetime_uct_str', 'status'])
 
 # %% loop!
-for date in range(258, len(datetime_list_pd)):
+for date in range(0, len(datetime_list_pd)):
     # grab datetime
     temp_datetime_uct_str = datetime_list_pd['datetime_uct_str'][date]
 
