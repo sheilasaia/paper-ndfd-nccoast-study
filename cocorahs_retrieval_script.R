@@ -30,8 +30,10 @@ tabular_data_export_path <- "/Users/sheila/Documents/bae_shellcast_project/shell
 # ---- 2. loop through data ----
 # for loop for multiple days
 # define start and end days
-start_date <- ymd("2016-01-01")
-end_date <- ymd("2018-12-31")
+# start_date <- ymd("2016-01-01")
+# end_date <- ymd("2018-12-31")
+start_date <- ymd("2015-01-01")
+end_date <- ymd("2016-12-31")
 day_step <- duration(num = 1, units = "days")
 num_days <- time_length(end_date - start_date, unit = "days")
 
@@ -81,7 +83,7 @@ for (i in 0:num_days) {
                       long = as.numeric(long_list),
                       precip_in = as.numeric(precip_list)) %>% # as.numeric() will convert NAs and Ts all to NAs
     na.omit() %>% # delete NA entries
-    mutate(date_time_est = ymd_hm(paste0(date, " ", time), tz = "EST")) %>%
+    mutate(date_time_est = as.character(ymd_hm(paste0(date, " ", time), tz = "EST"))) %>%
     select(date, time, date_time_est, station_id:precip_in)
   # NA warning is ok here this happens from using as.numeric
   # map(temp_data, class) # checks classes of columns
@@ -91,13 +93,12 @@ for (i in 0:num_days) {
   
   # print date
   print(temp_date)
-  
 }
 
 
 # ---- 3. export data ----
 # export to csv
-write_csv(x = cocorahs_data, path = paste0(tabular_data_export_path, "cocorahs_data_raw.csv"))
+write_csv(x = cocorahs_data %>% arrange(date_time_est), path = paste0(tabular_data_export_path, "cocorahs_data_raw.csv"))
 
 
 
