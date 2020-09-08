@@ -1,6 +1,6 @@
 # ---- script header ----
 # script name: read_ncsco_api_metadata.R
-# purpose of script: defines a function that reads metadata (only) from the nc sco api
+# purpose of script: defines a function that reads metadata (only) from the NC SCO API
 # author: sheila saia
 # date created: 20200618
 # email: ssaia@ncsu.edu
