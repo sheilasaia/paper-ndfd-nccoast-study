@@ -71,6 +71,7 @@
 library(tidyverse)
 library(RCurl)
 library(lubridate)
+# library(httr)
 
 
 # ---- 2. source functions ----
@@ -86,7 +87,6 @@ source(paste0(functions_path, "get_ncsco_api_data.R"))
 
 
 # ---- 3. define api key and paths
-
 # get nc sco api key (need to request this from the nc sco)
 NCSOC_API_KEY <- Sys.getenv("NCSOC_API_KEY")
 
@@ -98,7 +98,7 @@ data_export_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_ana
 # list all networks to pull
 my_ncsco_networks = c("ASOS", "AWOS", "BUOY", "CMAN", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
 
-for (n in 6:length(my_ncsco_networks)) {
+for (n in 7:length(my_ncsco_networks)) {
   # pick network
   temp_ncsco_network <- my_ncsco_networks[n]
   
@@ -109,9 +109,12 @@ for (n in 6:length(my_ncsco_networks)) {
                                   end_date = "20161231", 
                                   api_key = NCSOC_API_KEY)
   
-  # define data and metadata
+  # define data
   data_raw <- data_list$data_raw
-  metadata_raw <- data_list$metadata_raw
+  
+  # define metadata and keep replicates
+  metadata_raw <- data_list$metadata_raw %>%
+    distinct_all() # delete replicates
   
   # only export if there's data
   if (dim(data_raw)[1] > 0) {

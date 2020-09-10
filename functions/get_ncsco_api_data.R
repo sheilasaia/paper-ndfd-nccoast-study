@@ -22,7 +22,7 @@
 #'
 #' @param ncsco_network A string describing the valid NC SCO API network name (can only be one value i.e., "ASOS")
 #' @param start_date A YYYY-MM-DD string representing the start date of the data request (e.g., "2020-01-01")
-#' @param end_date A YYYY-MM-DD string representing the end date of the data request (e.g., "2020-09-08")
+#' @param end_date A YYYY-MM-DD string representing the end date of the data request, must be later than start_date (e.g., "2020-09-08")
 #' @param api_key A string describing the NC SCO API key
 #' @return A list with two dataframes (data and metadata) for the specified network and date range.
 #' 
@@ -38,22 +38,27 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
   # num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "month"))
   num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "day"))
   
-  # loop
-  for(i in 2:num_steps) {
-    # redefine start and end
-    # temp_start_date <- date_step_list$start_date[(i - 1)] %m+% months(1)
-    # temp_end_date <- temp_start_date %m+% months(1) %m-% days(1)
-    temp_start_date <- date_step_list$start_date[(i - 1)] %m+% days(1)
-    temp_end_date <- temp_start_date %m+% days(1)
-    # %m+% manual: https://www.rdocumentation.org/packages/lubridate/versions/1.7.9/topics/%25m%2B%25
-    
-    # make df to add to final df
-    temp_date_list <- data.frame(start_date = temp_start_date,
-                                 end_date = temp_end_date)
-    
-    # save temp df to final df
-    date_step_list <- rbind(date_step_list, temp_date_list)
+  # if more than one step then append steps to date_step_list
+  if (num_steps > 1) {
+    # loop
+    for(i in 2:num_steps) {
+      # redefine start and end
+      # temp_start_date <- date_step_list$start_date[(i - 1)] %m+% months(1)
+      # temp_end_date <- temp_start_date %m+% months(1) %m-% days(1)
+      temp_start_date <- date_step_list$start_date[(i - 1)] %m+% days(1)
+      temp_end_date <- temp_start_date %m+% days(1)
+      # %m+% manual: https://www.rdocumentation.org/packages/lubridate/versions/1.7.9/topics/%25m%2B%25
+      
+      # make df to add to final df
+      temp_date_list <- data.frame(start_date = temp_start_date,
+                                   end_date = temp_end_date)
+      
+      # save temp df to final df
+      date_step_list <- rbind(date_step_list, temp_date_list)
+    }
   }
+  
+  # else no appending
   
   # create empty df's for data and metadata
   data_raw <- data.frame(location_id = character(),
@@ -76,7 +81,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
                              state = character(),
                              latitude_degrees_north = numeric(),
                              longitude_degrees_east = numeric(),
-                             elevation_feet = numeric(),
+                             elevation_feet_chr = numeric(),
                              supporting_agency_for_location = character(),
                              start_date_chr = character(),
                              end_date_chr = character(),
@@ -101,8 +106,8 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     
     # put all together to get query url
     query_url <- paste0(base_url, url_var, url_loc, url_state, url_int, url_start_date, url_end_date, url_output, url_key)
-    # query_url <- "https://climate.ncsu.edu/api/beta/data.php?var=precip1m&loc=type=COOP;state=NC&type=meta&int=1 day&start=2016-01-01&end=2017-01-31&output=csv&hash=cf71ae662d7477da3c53da8a1b6d87e49406a28b"
-    # query_url <- "https://climate.ncsu.edu/api/beta/data.php?var=precip1m&loc=type=COOP;state=NC&int=1 day&start=2016-01-01&end=2016-01-31&output=csv&hash=cf71ae662d7477da3c53da8a1b6d87e49406a28b"
+    # query_url <- "https://climate.ncsu.edu/api/beta/data.php?var=precip1m&loc=type=COOP;state=NC&type=meta&int=1 day&start=2016-01-01&end=2017-01-31&output=csv&hash=xxxxxx"
+    # query_url <- "https://climate.ncsu.edu/api/beta/data.php?var=precip1m&loc=type=COOP;state=NC&int=1 day&start=2016-01-01&end=2016-01-31&output=csv&hash=xxxxxxxx"
 
     # replace spaces in query url with %20 otherwise will get api error
     query_url_fix <- URLencode(query_url) # need to replace " " with "%20"
