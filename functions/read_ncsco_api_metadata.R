@@ -48,7 +48,7 @@ read_ncsco_api_metadata <- function(query_url) {
   
   # no issues so save as new name
   # else {
-    metadata_data_no_header_checked <- metadata_data_no_header
+  metadata_data_no_header_checked <- metadata_data_no_header
   # }
   
   # tidy up header
