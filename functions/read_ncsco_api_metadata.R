@@ -18,12 +18,12 @@
 
 #' Grab metadata from the NC SCO API.
 #'
-#' @param query_url A NC SCO API query url (without spaces).
-#' @return A dataframe with query metadata.
-read_ncsco_api_metadata <- function(query_url) {
+#' @param query_raw_text The raw text from a NC SCO API query.
+#' @return A dataframe with tidied metadata based on the NC SCO API query.
+read_ncsco_api_metadata <- function(query_raw_text) {
   
   # grab metadata from url
-  metadata_raw <- read_lines(file = query_url)
+  metadata_raw <- read_lines(file = query_raw_text)
   
   # find lines with comments (list of line numbers)
   comment_lines <- grep("## ", metadata_raw)
@@ -75,7 +75,8 @@ read_ncsco_api_metadata <- function(query_url) {
     # separate(col = metadata_repl_header_fix, sep = ",", remove = FALSE)
   
   # add tidy header and read in as csv
-  metadata_tidy <- read_csv(c(metadata_repl_header, metadata_data_no_header_checked), col_names = TRUE)
+  metadata_tidy <- read_csv(c(metadata_repl_header, metadata_data_no_header_checked), col_names = TRUE) %>%
+    distinct_all() # delete replicates
   
   return(metadata_tidy) 
 }
