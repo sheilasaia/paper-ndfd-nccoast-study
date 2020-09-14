@@ -61,6 +61,7 @@
 
 # ---- to do ----
 
+# TODO regenerate api key (hash) code for api
 # TODO fill out metadata column description in notes
 # TODO make tests in case data isn't available and nothing to append or too much to append
 # TODO use here package for paths - hard coding them for now
@@ -71,7 +72,7 @@
 library(tidyverse)
 library(RCurl)
 library(lubridate)
-# library(httr)
+library(httr)
 
 
 # ---- 2. source functions ----
@@ -97,8 +98,10 @@ data_export_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_ana
 # ---- 4. get data for multiple networks ----
 # list all networks to pull
 my_ncsco_networks = c("ASOS", "AWOS", "BUOY", "CMAN", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
+# my_ncsco_networks = c("ASOS", "AWOS", "BUOY", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
+# CMAN there's no data coming up
 
-for (n in 7:length(my_ncsco_networks)) {
+for (n in 7:7){ #length(my_ncsco_networks)) {
   # pick network
   temp_ncsco_network <- my_ncsco_networks[n]
   
@@ -113,8 +116,7 @@ for (n in 7:length(my_ncsco_networks)) {
   data_raw <- data_list$data_raw
   
   # define metadata and keep replicates
-  metadata_raw <- data_list$metadata_raw %>%
-    distinct_all() # delete replicates
+  metadata_raw <- data_list$metadata_raw
   
   # only export if there's data
   if (dim(data_raw)[1] > 0) {
