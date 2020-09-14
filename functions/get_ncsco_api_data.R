@@ -28,25 +28,27 @@
 #' 
 #' Requires read_sco_api_metadata.R function
 get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, api_key) {
+  # step by month
   # date list df with start and end date for first step (i.e., the first month)
-  # date_month_step_list <- data.frame(start_date = ymd(start_date),
-  #                                    end_date = ymd(start_date) %m+% months(1) %m-% days(1))
   date_step_list <- data.frame(start_date = ymd(start_date),
-                               end_date = ymd(start_date) %m+% days(1))
+                               end_date = ymd(start_date) %m+% months(1) %m-% days(1))
+  # step by day
+  # date_step_list <- data.frame(start_date = ymd(start_date),
+  #                              end_date = ymd(start_date) %m+% days(1))
   
   # number of steps
-  # num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "month"))
-  num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "day"))
+  num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "month"))
+  # num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "day"))
   
   # if more than one step then append steps to date_step_list
   if (num_steps > 1) {
     # loop
     for(i in 2:num_steps) {
       # redefine start and end
-      # temp_start_date <- date_step_list$start_date[(i - 1)] %m+% months(1)
-      # temp_end_date <- temp_start_date %m+% months(1) %m-% days(1)
-      temp_start_date <- date_step_list$start_date[(i - 1)] %m+% days(1)
-      temp_end_date <- temp_start_date %m+% days(1)
+      temp_start_date <- date_step_list$start_date[(i - 1)] %m+% months(1)
+      temp_end_date <- temp_start_date %m+% months(1) %m-% days(1)
+      # temp_start_date <- date_step_list$start_date[(i - 1)] %m+% days(1)
+      # temp_end_date <- temp_start_date %m+% days(1)
       # %m+% manual: https://www.rdocumentation.org/packages/lubridate/versions/1.7.9/topics/%25m%2B%25
       
       # make df to add to final df
@@ -81,7 +83,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
                              state = character(),
                              latitude_degrees_north = numeric(),
                              longitude_degrees_east = numeric(),
-                             elevation_feet_chr = numeric(),
+                             elevation_feet_chr = character(),
                              supporting_agency_for_location = character(),
                              start_date_chr = character(),
                              end_date_chr = character(),
@@ -106,8 +108,6 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     
     # put all together to get query url
     query_url <- paste0(base_url, url_var, url_loc, url_state, url_int, url_start_date, url_end_date, url_output, url_key)
-    # query_url <- "https://climate.ncsu.edu/api/beta/data.php?var=precip1m&loc=type=COOP;state=NC&type=meta&int=1 day&start=2016-01-01&end=2017-01-31&output=csv&hash=xxxxxx"
-    # query_url <- "https://climate.ncsu.edu/api/beta/data.php?var=precip1m&loc=type=COOP;state=NC&int=1 day&start=2016-01-01&end=2016-01-31&output=csv&hash=xxxxxxxx"
 
     # replace spaces in query url with %20 otherwise will get api error
     query_url_fix <- URLencode(query_url) # need to replace " " with "%20"
@@ -116,14 +116,23 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     # url.exists(query_url_fix)
     # this is still true even when gives 400 error
     
-    # data_size_test <- GET(query_url_fix)
-    # data_size_status <- data_size_test$status
+    # print status
+    print("query started")
+    
+    # query
+    temp_data_raw <- httr::GET(query_url_fix)
+    
+    # print status
+    print("query finished")
+    
+    temp_data_text_raw <- httr::content(temp_data_raw, "text")
+    # temp_data_raw_status <- temp_data_raw$status
     # 200 = good
     # 504 = too big of a request
     # 400 = query doesn't exist
     
     # check if there's data
-    temp_data_check <- read_csv(file = query_url_fix, comment = "##", col_types = cols())
+    temp_data_check <- read_csv(temp_data_text_raw, comment = "##", col_types = cols())
     
     # if there's data then run
     if (dim(temp_data_check)[1] > 0) {
@@ -135,7 +144,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
         select(location_id, datetime_chr_et, var:value_accum) # make location id column the same as metadata, use date as character columns for now
       
       # use function
-      temp_metadata_raw <- read_ncsco_api_metadata(query_url_fix) %>%
+      temp_metadata_raw <- read_ncsco_api_metadata(temp_data_text_raw) %>%
         mutate(start_date_chr = as.character(start_date),
                end_date_chr = as.character(end_date),
                elevation_feet_chr = as.character(elevation_feet),
@@ -147,13 +156,13 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
       metadata_raw <- bind_rows(temp_metadata_raw, metadata_raw)
       
       # print entry status
-      print(paste0("appended day ", j))
+      print(paste0("appended step ", j, " of ", num_steps, " steps"))
   
     }
     
     else {
       # print entry status 
-      print(paste0("no data for day ", j))
+      print(paste0("no data for step ", j, " of ", num_steps, " steps"))
       
       # move to next iterator
       next
