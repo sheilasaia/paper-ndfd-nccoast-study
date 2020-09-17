@@ -68,7 +68,7 @@
 # TODO check difference bewteen precip1m and precip variables
 
 
-# ---- 1. load libraries and set paths----
+# ---- 1. load libraries and set paths ----
 library(tidyverse)
 library(RCurl)
 library(lubridate)
