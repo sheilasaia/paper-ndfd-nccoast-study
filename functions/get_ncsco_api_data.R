@@ -112,10 +112,6 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     # replace spaces in query url with %20 otherwise will get api error
     query_url_fix <- URLencode(query_url) # need to replace " " with "%20"
     
-    # check that url exists
-    # url.exists(query_url_fix)
-    # this is still true even when gives 400 error
-    
     # print status
     print("query started")
     
@@ -125,41 +121,56 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     # print status
     print("query finished")
     
-    temp_data_text_raw <- httr::content(temp_data_raw, "text")
-    # temp_data_raw_status <- temp_data_raw$status
+    # check status
+    temp_data_raw_status <- temp_data_raw$status
     # 200 = good
-    # 504 = too big of a request
+    # 504 = too big of a request or server timed out
     # 400 = query doesn't exist
     
-    # check if there's data
-    temp_data_check <- read_csv(temp_data_text_raw, comment = "##", col_types = cols())
-    
-    # if there's data then run
-    if (dim(temp_data_check)[1] > 0) {
+    # only tidy data if status code is anything but 200
+    if (temp_data_raw_status == 200) {
+      # save text contents
+      temp_data_text_raw <- httr::content(temp_data_raw, "text")
       
-      # grab data from url (without metadata)
-      temp_data_raw <- temp_data_check  %>% # this grabs just the data, length(test_data) > 1 then there's data, datetime is ET
-        mutate(datetime_chr_et = as.character(datetime),
-               location_id = as.character(location)) %>%
-        select(location_id, datetime_chr_et, var:value_accum) # make location id column the same as metadata, use date as character columns for now
+      # check if there's data
+      temp_data_check <- read_csv(temp_data_text_raw, comment = "##", col_types = cols())
       
-      # use function
-      temp_metadata_raw <- read_ncsco_api_metadata(temp_data_text_raw) %>%
-        mutate(start_date_chr = as.character(start_date),
-               end_date_chr = as.character(end_date),
-               elevation_feet_chr = as.character(elevation_feet),
-               location_id = as.character(location_id)) %>%
-        select(location_id:longitude_degrees_east, elevation_feet_chr, supporting_agency_for_location, start_date_chr, end_date_chr, obtypes_available) 
+      # if there's data then run
+      if (dim(temp_data_check)[1] > 0) {
+        
+        # grab data from url (without metadata)
+        temp_data_raw <- temp_data_check  %>% # this grabs just the data, length(test_data) > 1 then there's data, datetime is ET
+          mutate(datetime_chr_et = as.character(datetime),
+                 location_id = as.character(location)) %>%
+          select(location_id, datetime_chr_et, var:value_accum) # make location id column the same as metadata, use date as character columns for now
+        
+        # use function
+        temp_metadata_raw <- read_ncsco_api_metadata(temp_data_text_raw) %>%
+          mutate(start_date_chr = as.character(start_date),
+                 end_date_chr = as.character(end_date),
+                 elevation_feet_chr = as.character(elevation_feet),
+                 location_id = as.character(location_id)) %>%
+          select(location_id:longitude_degrees_east, elevation_feet_chr, supporting_agency_for_location, start_date_chr, end_date_chr, obtypes_available) 
+        
+        # append data
+        data_raw <- bind_rows(temp_data_raw, data_raw)
+        metadata_raw <- bind_rows(temp_metadata_raw, metadata_raw)
+        
+        # print entry status
+        print(paste0("appended step ", j, " of ", num_steps, " steps"))
+        
+      }
       
-      # append data
-      data_raw <- bind_rows(temp_data_raw, data_raw)
-      metadata_raw <- bind_rows(temp_metadata_raw, metadata_raw)
-      
-      # print entry status
-      print(paste0("appended step ", j, " of ", num_steps, " steps"))
-  
+      else {
+        # print entry status 
+        print(paste0("no data for step ", j, " of ", num_steps, " steps"))
+        
+        # move to next iterator
+        next
+      }
     }
     
+    # if there's no data or server times out
     else {
       # print entry status 
       print(paste0("no data for step ", j, " of ", num_steps, " steps"))
