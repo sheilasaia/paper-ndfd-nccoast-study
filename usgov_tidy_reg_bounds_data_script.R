@@ -90,8 +90,3 @@ st_write(nc_bounds_albers, paste0(spatial_data_output_path, "region_state_bounds
 st_write(nc_bounds_buffer_albers, paste0(spatial_data_output_path, "region_state_bounds/nc_bounds_10kmbuf_albers.shp"), delete_layer = TRUE)
 
 
-
-
-# ---- X. tidy data ----
-
-
