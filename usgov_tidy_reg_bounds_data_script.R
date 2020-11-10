@@ -76,12 +76,20 @@ nc_bounds_buffer_albers <- nc_bounds_albers %>%
   st_convex_hull() # simple buffer
 
 
+# ---- 7. dissolve urban bounds into one polygon ----
+urban_bounds_combo_albers <- urban_bounds_albers %>%
+  st_combine()
+
+
 # ---- 7. export data ----
 # export state bounds
 st_write(state_bounds_albers, paste0(spatial_data_output_path, "region_state_bounds/state_bounds_albers.shp"), delete_layer = TRUE)
   
 # export urban bounds
 st_write(urban_bounds_albers, paste0(spatial_data_output_path, "region_state_bounds/urban_bounds_albers.shp"), delete_layer = TRUE)
+
+# export urban bounds combined
+st_write(urban_bounds_combo_albers, paste0(spatial_data_output_path, "region_state_bounds/urban_bounds_combo_albers.shp"), delete_layer = TRUE)
 
 # export nc state bounds
 st_write(nc_bounds_albers, paste0(spatial_data_output_path, "region_state_bounds/nc_bounds_albers.shp"), delete_layer = TRUE)
