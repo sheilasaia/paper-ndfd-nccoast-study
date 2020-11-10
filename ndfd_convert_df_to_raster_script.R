@@ -27,14 +27,14 @@ library(lubridate)
 
 
 # ---- 2. define base paths ----
-# tabular data
-tabular_data_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/ndfd_sco_hist_raw/"
+# path to ndfd tabular inputs
+ndfd_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/ndfd_sco_hist_raw/"
 
-# spatial data
-spatial_data_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/web_app_data/spatial/inputs/state_bounds_data/"
+# path to nc buffer spatial inputs
+nc_buffer_spatial_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/region_state_bounds/"
 
-# spatial data output path
-spatial_output_data_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/ndfd_sco_hist/"
+# path to ndfd spatial outputs
+ndfd_sco_spatial_data_output_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/ndfd_sco_hist/"
 
 
 # ---- 3. define projections ----
@@ -43,8 +43,12 @@ ndfd_proj4 = "+proj=lcc +lat_1=25 +lat_2=25 +lat_0=25 +lon_0=-95 +x_0=0 +y_0=0 +
 # source: https://spatialreference.org/ref/sr-org/6825/
 
 # define epsg and proj4 for N. America Albers projection (projecting to this)
-na_albers_proj4 <- "+proj=aea +lat_1=20 +lat_2=60 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
-na_albers_epsg <- 102008
+# na_albers_proj4 <- "+proj=aea +lat_1=20 +lat_2=60 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+# na_albers_epsg <- 102008
+
+# define epsg and proj for CONUS Albers projection (projecting to this)
+conus_albers_proj <- "+init=EPSG:5070"
+conus_albers_epsg <- 5070
 
 # define wgs 84 projection
 # wgs84_epsg <- 4326
@@ -54,17 +58,16 @@ na_albers_epsg <- 102008
 # ---- 4. load data ----
 
 # data available
-data_available <- read_csv(paste0(tabular_data_path, "data_available.csv"), col_names = TRUE)
+data_available <- read_csv(paste0(ndfd_tabular_data_input_path, "data_available.csv"), col_names = TRUE)
 
 # nc buffer bounds
-nc_buffer_albers <- st_read(paste0(spatial_data_path, "nc_bounds_10kmbuf_albers.shp")) %>%
-  st_set_crs(na_albers_epsg) # epsg code wasn't assigned if this code isn't included
+nc_buffer_albers <- st_read(paste0(nc_buffer_spatial_input_path, "nc_bounds_10kmbuf_albers.shp"))
 
 
 # ---- 5. loop ----
 
 # files available
-file_list <- list.files(path = tabular_data_path)
+file_list <- list.files(path = ndfd_tabular_data_input_path)
 
 # read in data that's available
 for (i in 1:dim(data_available)[1]) {
@@ -109,12 +112,12 @@ for (i in 1:dim(data_available)[1]) {
                                        coords = c("longitude_m", "latitude_m"),
                                        crs = ndfd_proj4,
                                        dim = "XY") %>%
-      st_transform(crs = na_albers_epsg)
+      st_transform(crs = conus_albers_epsg)
     temp_ndfd_qpf_albers <- st_as_sf(temp_ndfd_qpf_data,
                                      coords = c("longitude_m", "latitude_m"),
                                      crs = ndfd_proj4,
                                      dim = "XY") %>%
-      st_transform(crs = na_albers_epsg)
+      st_transform(crs = conus_albers_epsg)
     
     # select 1-day
     temp_ndfd_pop12_albers_1day <- temp_ndfd_pop12_albers %>%
@@ -145,27 +148,27 @@ for (i in 1:dim(data_available)[1]) {
     # make empty raster for 1-day, 2-day, and 3-day forecasts
     temp_ndfd_pop12_grid_1day <- raster(ncol = length(unique(temp_ndfd_pop12_albers_1day$longitude_km)),
                                    nrows = length(unique(temp_ndfd_pop12_albers_1day$latitude_km)),
-                                   crs = na_albers_proj4,
+                                   crs = conus_albers_proj,
                                    ext = extent(temp_ndfd_pop12_albers_1day))
     temp_ndfd_pop12_grid_2day <- raster(ncol = length(unique(temp_ndfd_pop12_albers_2day$longitude_km)),
                                    nrows = length(unique(temp_ndfd_pop12_albers_2day$latitude_km)),
-                                   crs = na_albers_proj4,
+                                   crs = conus_albers_proj,
                                    ext = extent(temp_ndfd_pop12_albers_2day))
     temp_ndfd_pop12_grid_3day <- raster(ncol = length(unique(temp_ndfd_pop12_albers_3day$longitude_km)),
                                    nrows = length(unique(temp_ndfd_pop12_albers_3day$latitude_km)),
-                                   crs = na_albers_proj4,
+                                   crs = conus_albers_proj,
                                    ext = extent(temp_ndfd_pop12_albers_3day))
     temp_ndfd_qpf_grid_1day <- raster(ncol = length(unique(temp_ndfd_qpf_albers_1day$longitude_km)),
                                  nrows = length(unique(temp_ndfd_qpf_albers_1day$latitude_km)),
-                                 crs = na_albers_proj4,
+                                 crs = conus_albers_proj,
                                  ext = extent(temp_ndfd_qpf_albers_1day))
     temp_ndfd_qpf_grid_2day <- raster(ncol = length(unique(temp_ndfd_qpf_albers_2day$longitude_km)),
                                  nrows = length(unique(temp_ndfd_qpf_albers_2day$latitude_km)),
-                                 crs = na_albers_proj4,
+                                 crs = conus_albers_proj,
                                  ext = extent(temp_ndfd_qpf_albers_2day))
     temp_ndfd_qpf_grid_3day <- raster(ncol = length(unique(temp_ndfd_qpf_albers_3day$longitude_km)),
                                  nrows = length(unique(temp_ndfd_qpf_albers_3day$latitude_km)),
-                                 crs = na_albers_proj4,
+                                 crs = conus_albers_proj,
                                  ext = extent(temp_ndfd_qpf_albers_3day))
     
     # rasterize for 1-day, 2-day, and 3-day forecasts
@@ -177,7 +180,6 @@ for (i in 1:dim(data_available)[1]) {
     temp_ndfd_qpf_raster_3day_albers <- raster::rasterize(temp_ndfd_qpf_albers_3day, temp_ndfd_qpf_grid_3day, field = temp_ndfd_qpf_albers_3day$qpf_value_in, fun = mean)
     # crs(temp_ndfd_pop12_grid_1day_albers)
     # crs(temp_ndfd_qpf_grid_1day_albers)
-    # na_albers_proj4 # it's missing the ellps-GRS80, not sure why...
     
     # plot to check
     # plot(temp_ndfd_pop12_raster_1day_albers)
@@ -205,12 +207,12 @@ for (i in 1:dim(data_available)[1]) {
     # plot(temp_ndfd_qpf_raster_3day_nc_albers)
     
     # export rasters for 1-day, 2-day, and 3-day forecasts
-    writeRaster(temp_ndfd_pop12_raster_1day_nc_albers, paste0(spatial_output_data_path, "pop12_24hr_nc_albers_", temp_date_str, ".tif"))
-    writeRaster(temp_ndfd_pop12_raster_2day_nc_albers, paste0(spatial_output_data_path, "pop12_48hr_nc_albers_", temp_date_str, ".tif"))
-    writeRaster(temp_ndfd_pop12_raster_3day_nc_albers, paste0(spatial_output_data_path, "pop12_72hr_nc_albers_", temp_date_str, ".tif"))
-    writeRaster(temp_ndfd_qpf_raster_1day_nc_albers, paste0(spatial_output_data_path, "qpf_24hr_nc_albers_", temp_date_str, ".tif"))
-    writeRaster(temp_ndfd_qpf_raster_2day_nc_albers, paste0(spatial_output_data_path, "qpf_48hr_nc_albers_", temp_date_str, ".tif"))
-    writeRaster(temp_ndfd_qpf_raster_3day_nc_albers, paste0(spatial_output_data_path, "qpf_72hr_nc_albers_", temp_date_str, ".tif"))
+    writeRaster(temp_ndfd_pop12_raster_1day_nc_albers, paste0(spatial_output_data_path, "pop12_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_pop12_raster_2day_nc_albers, paste0(spatial_output_data_path, "pop12_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_pop12_raster_3day_nc_albers, paste0(spatial_output_data_path, "pop12_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_1day_nc_albers, paste0(spatial_output_data_path, "qpf_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_2day_nc_albers, paste0(spatial_output_data_path, "qpf_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_3day_nc_albers, paste0(spatial_output_data_path, "qpf_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
     
     # print status
     print(paste0("finished converting df to raster for ", temp_date_str))
