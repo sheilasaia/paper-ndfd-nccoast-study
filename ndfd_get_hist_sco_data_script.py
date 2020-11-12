@@ -16,6 +16,7 @@ pydap help: https://pydap.readthedocs.io/en/latest/developer_data_model.html
 thredds help (with python code): https://oceanobservatories.org/thredds-quick-start/#python
 to see the nc sco catalog website: https://tds.climate.ncsu.edu/thredds/catalog/nws/ndfd/catalog.html
 
+
 """
 
 # %% to do list
@@ -23,14 +24,9 @@ to see the nc sco catalog website: https://tds.climate.ncsu.edu/thredds/catalog/
 # TODO is there a more efficient way to loop through the different hours of data? (in the tidy data function)
 
 
-# %% help
-
-# pydap help: https://pydap.readthedocs.io/en/latest/developer_data_model.html
-# thredds help (with python code): https://oceanobservatories.org/thredds-quick-start/#python
-# to see the nc sco catalog website: https://tds.climate.ncsu.edu/thredds/catalog/nws/ndfd/catalog.html
-
 # %% load libraries
 
+import sys
 import pandas # for data mgmt
 import numpy # for data mgmt
 import datetime as dt # for datetime mgmt
@@ -40,30 +36,28 @@ from csv import writer
 
 # %% set paths
 
+# set project path
+project_path = "/Users/sheila/Documents/github/paper-ndfd-nccoast-study/functions/"
+
 # define data directory path (for export)
 data_dir_path = '/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/ndfd_sco_hist_raw/'
 
 # definie analysis directory (separate from data for now)
 analysis_dir_path = '/Users/sheila/Documents/github/paper-ndfd-nccoast-study/'
 
-# path to custom functions needed for this script
-functions_dir_path = analysis_dir_path + "functions/"
 
+# %% set anchor to project and load custom functions
+# set anchor
+sys.path.insert(0, project_path)
 
-# %% load custom functions
-
-exec(open((functions_dir_path + "convert_sco_ndfd_datetime_str.py")).read())
-exec(open((functions_dir_path + "get_sco_ndfd_data.py")).read())
-exec(open((functions_dir_path + "aggregate_sco_ndfd_var_data.py")).read())
-exec(open((functions_dir_path + "tidy_sco_ndfd_data.py")).read())
-exec(open((functions_dir_path + "append_list_as_row.py")).read())
-exec(open((functions_dir_path + "get_var_col_name.py")).read())
+# import custom functions
+from functions import aggregate_sco_ndfd_var_data, append_list_as_row, convert_sco_ndfd_datetime_str, get_sco_ndfd_data, get_var_col_name, tidy_sco_ndfd_data # see functions.py file
 
 
 # %% test functions
 
 # datetime
-test_datetime_uct_str = "2016-01-01 00:00"
+test_datetime_uct_str = "2015-01-02 00:00"
 #test_datetime_uct_str = "2016-04-13 00:00" # this one doesn't exist (but need to check it works)
 #test_datetime_uct_str = "2016-01-20 00:00" # this one doesn't have the desired times
 #test_datetime_uct_str = "2016-06-05 00:00" # this one has reftime and time
@@ -71,6 +65,10 @@ test_datetime_uct_str = "2016-01-01 00:00"
 
 # test function
 test_ym_str, test_ymd_str, test_ymdh_str = convert_sco_ndfd_datetime_str(datetime_str = test_datetime_uct_str)
+
+test_ym_str
+test_ymd_str
+test_ymdh_str
 
 # define serve path
 ndfd_sco_server_url = 'https://tds.climate.ncsu.edu/thredds/dodsC/nws/ndfd/'
@@ -84,8 +82,14 @@ test_data = get_sco_ndfd_data(base_server_url = ndfd_sco_server_url, datetime_uc
 # tidy qpf data
 test_qpf_data_pd, test_qpf_datetime_ymdh_str = tidy_sco_ndfd_data(ndfd_data = test_data, datetime_uct_str = test_datetime_uct_str, ndfd_var = "qpf")
 
+test_qpf_data_pd
+test_qpf_datetime_ymdh_str
+
 # tidy pop12 data
 test_pop12_data_pd, test_pop12_datetime_ymdh_str = tidy_sco_ndfd_data(ndfd_data = test_data, datetime_uct_str = test_datetime_uct_str, ndfd_var = "pop12")
+
+test_pop12_data_pd
+test_pop12_datetime_ymdh_str
 
 # test non-valid ndfd_var option
 #tidy_sco_ndfd_data(ndfd_data = test_data, datetime_uct_str = test_datetime_uct_str, ndfd_var = "qff")
@@ -193,11 +197,11 @@ for date in range(0, len(datetime_list_pd)):
 # pop12_data_pd.to_csv(pop12_data_path, index = False)
 
 # export data availability
-data_availability_path = data_dir_path + "data_available2.csv"
+data_availability_path = data_dir_path + "data_available.csv"
 data_available_pd.to_csv(data_availability_path, index = False)
 
 # export datetime dataframe
-datetime_pd_path = data_dir_path + "datetime_list_pd2.csv"
+datetime_pd_path = data_dir_path + "datetime_list_pd.csv"
 datetime_list_pd.to_csv(datetime_pd_path, index = False)
 
 # it works! :)
