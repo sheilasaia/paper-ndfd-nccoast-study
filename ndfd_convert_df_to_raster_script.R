@@ -28,7 +28,7 @@ library(lubridate)
 
 # ---- 2. define base paths ----
 # path to ndfd tabular inputs
-ndfd_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/ndfd_sco_hist_raw/"
+ndfd_sco_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/ndfd_sco_hist_raw/"
 
 # path to nc buffer spatial inputs
 nc_buffer_spatial_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/region_state_bounds/"
@@ -56,9 +56,8 @@ conus_albers_epsg <- 5070
 
 
 # ---- 4. load data ----
-
 # data available
-data_available <- read_csv(paste0(ndfd_tabular_data_input_path, "data_available.csv"), col_names = TRUE)
+data_available <- read_csv(paste0(ndfd_sco_tabular_data_input_path, "data_available.csv"), col_names = TRUE)
 
 # nc buffer bounds
 nc_buffer_albers <- st_read(paste0(nc_buffer_spatial_input_path, "nc_bounds_10kmbuf_albers.shp"))
@@ -67,10 +66,10 @@ nc_buffer_albers <- st_read(paste0(nc_buffer_spatial_input_path, "nc_bounds_10km
 # ---- 5. loop ----
 
 # files available
-file_list <- list.files(path = ndfd_tabular_data_input_path)
+file_list <- list.files(path = ndfd_sco_tabular_data_input_path)
 
 # read in data that's available
-for (i in 1:dim(data_available)[1]) {
+for (i in 1:4) { #dim(data_available)[1]) {
   status <- data_available$status[i]
   
   if (status == "available") {
@@ -89,10 +88,10 @@ for (i in 1:dim(data_available)[1]) {
     temp_qpf_file_name <- temp_files[grep(pattern = "qpf", x = temp_files)]
     
     # load in tabular data
-    temp_ndfd_pop12_data_raw <- read_csv(paste0(tabular_data_path, temp_pop12_file_name),
+    temp_ndfd_pop12_data_raw <- read_csv(paste0(ndfd_sco_tabular_data_input_path, temp_pop12_file_name),
                                          col_types = list(col_double(), col_double(), col_double(), col_double(), col_double(), col_double(), col_double(),
                                                           col_character(), col_character(), col_character(), col_character(), col_character()))
-    temp_ndfd_qpf_data_raw <- read_csv(paste0(tabular_data_path, temp_qpf_file_name),
+    temp_ndfd_qpf_data_raw <- read_csv(paste0(ndfd_sco_tabular_data_input_path, temp_qpf_file_name),
                                        col_types = list(col_double(), col_double(), col_double(), col_double(), col_double(), col_double(), col_double(),
                                                         col_character(), col_character(), col_character(), col_character(), col_character()))
     
@@ -207,12 +206,12 @@ for (i in 1:dim(data_available)[1]) {
     # plot(temp_ndfd_qpf_raster_3day_nc_albers)
     
     # export rasters for 1-day, 2-day, and 3-day forecasts
-    writeRaster(temp_ndfd_pop12_raster_1day_nc_albers, paste0(spatial_output_data_path, "pop12_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_pop12_raster_2day_nc_albers, paste0(spatial_output_data_path, "pop12_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_pop12_raster_3day_nc_albers, paste0(spatial_output_data_path, "pop12_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_qpf_raster_1day_nc_albers, paste0(spatial_output_data_path, "qpf_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_qpf_raster_2day_nc_albers, paste0(spatial_output_data_path, "qpf_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_qpf_raster_3day_nc_albers, paste0(spatial_output_data_path, "qpf_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_pop12_raster_1day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "pop12_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_pop12_raster_2day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "pop12_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_pop12_raster_3day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "pop12_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_1day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "qpf_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_2day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "qpf_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_3day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "qpf_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
     
     # print status
     print(paste0("finished converting df to raster for ", temp_date_str))
