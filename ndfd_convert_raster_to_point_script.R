@@ -41,7 +41,6 @@ ndfd_sco_spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_proje
 # path to ndfd tabular outputs
 ndfd_sco_tabular_data_output_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/ndfd_sco_hist/"
 
-
 # results/figures
 # figures_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/results/figures/"
 
@@ -70,7 +69,7 @@ nc_coast_county_bounds_albers <- st_read(paste0(spatial_data_input_path, "coast_
 # all have crs = 5070, checks!
 
 
-# ---- 4. county-based: classify historic precip as urban/non-urban and coast/non-coast ----
+# ---- 4. county based: classify historic precip as urban/non-urban and coast/non-coast ----
 # coast/non-coast determining dataset
 boundary_dataset <- nc_coast_county_bounds_albers
 
@@ -112,7 +111,7 @@ hist_precip_metadata_coast_5kmbuf_albers <- hist_precip_metadata_coast_albers %>
 # 106 + 190
 
 
-# ---- 5. county-based: compute area weighted ndfd point values ----
+# ---- 5. county based: compute area weighted ndfd point values ----
 # files available
 file_list <- list.files(path = ndfd_sco_spatial_data_input_path)
 
@@ -136,8 +135,10 @@ ndfd_pts_calcs_data <- data.frame(loc_id = as.character(),
 # record start time
 start_time <- now()
 
+
+
 # read in data that's available
-for (i in 1:2) { #dim(data_available)[1]) {
+for (i in 32:181) { #dim(data_available)[1]) {
   status <- data_available$status[i]
   
   if (status == "available") {
@@ -164,8 +165,8 @@ for (i in 1:2) { #dim(data_available)[1]) {
       temp_valid_period <- valid_period_list[j]
       
       # find valid period files
-      temp_prd_pop12_file_name <- temp_pop12_file_name[grep(pattern = as.character(temp_valid_period), x = temp_pop12_file_name)]
-      temp_prd_qpf_file_name <- temp_qpf_file_name[grep(pattern = as.character(temp_valid_period), x = temp_qpf_file_name)]
+      temp_prd_pop12_file_name <- temp_pop12_file_name[grep(pattern = paste0(as.character(temp_valid_period), "hr"), x = temp_pop12_file_name)]
+      temp_prd_qpf_file_name <- temp_qpf_file_name[grep(pattern = paste0(as.character(temp_valid_period), "hr"), x = temp_qpf_file_name)]
       
       # read in ndfd raster data
       temp_pop12_raster <- raster::raster(paste0(ndfd_sco_spatial_data_input_path, temp_prd_pop12_file_name))
@@ -243,13 +244,13 @@ ndfd_calcs_county_based_data <- ndfd_pts_calcs_data
 
 
 # ---- 6. export all data ----
-# export county-based spatial data
+# export county based spatial data
 st_write(hist_precip_metadata_logic_albers, paste0(spatial_data_input_path, "hist_precip_data/county_based/hist_precip_metadata_logic_albers.shp"), delete_layer = TRUE)
 st_write(hist_precip_metadata_coast_albers, paste0(spatial_data_input_path, "hist_precip_data/county_based/hist_precip_metadata_coast_albers.shp"), delete_layer = TRUE)
 st_write(hist_precip_metadata_coast_5kmbuf_albers, paste0(spatial_data_input_path, "hist_precip_data/county_based/hist_precip_metadata_coast_5kmbuf_albers.shp"), delete_layer = TRUE)
 
-# export county-based ndfd calcs
-write_csv(ndfd_calcs_county_based_data, paste0(ndfd_sco_spatial_data_input_path, "ndfd_calcs_county_based_data.csv"))
+# export county based ndfd calcs
+write_csv(ndfd_calcs_county_based_data, paste0(ndfd_sco_tabular_data_output_path, "ndfd_calcs_county_based_data_to20150201to20150630.csv"))
 
 
 
