@@ -69,7 +69,7 @@ nc_buffer_albers <- st_read(paste0(nc_buffer_spatial_input_path, "nc_bounds_10km
 file_list <- list.files(path = ndfd_sco_tabular_data_input_path)
 
 # read in data that's available
-for (i in 1:4) { #dim(data_available)[1]) {
+for (i in 1:dim(data_available)[1]) {
   status <- data_available$status[i]
   
   if (status == "available") {
