@@ -138,7 +138,7 @@ start_time <- now()
 
 
 # read in data that's available
-for (i in 32:181) { #dim(data_available)[1]) {
+for (i in 182:365) { #dim(data_available)[1]) {
   status <- data_available$status[i]
   
   if (status == "available") {
@@ -250,7 +250,7 @@ st_write(hist_precip_metadata_coast_albers, paste0(spatial_data_input_path, "his
 st_write(hist_precip_metadata_coast_5kmbuf_albers, paste0(spatial_data_input_path, "hist_precip_data/county_based/hist_precip_metadata_coast_5kmbuf_albers.shp"), delete_layer = TRUE)
 
 # export county based ndfd calcs
-write_csv(ndfd_calcs_county_based_data, paste0(ndfd_sco_tabular_data_output_path, "ndfd_calcs_county_based_data_to20150201to20150630.csv"))
+write_csv(ndfd_calcs_county_based_data, paste0(ndfd_sco_tabular_data_output_path, "ndfd_calcs_county_based_data_to20150701to20151231.csv"))
 
 
 
