@@ -16,7 +16,8 @@
 # TODO fix hist_precip_metadata_county_based_coast_albers so loc_id is not factor (need to go back to convert_hist_precip_tabular_to_spatial.R)
 # TODO take out stations that don't have complete datasets?
 # TODO add 30-year normals (are 2015 and 2016 above/below average?)
-# 
+# TODO check hist_precip_metadata_county_based_coast_albers data (see issue #?)
+
 
 # ---- 1. load libraries and set paths ----
 library(tidyverse)
@@ -43,7 +44,7 @@ figure_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/figures/"
 
 # ---- 3. load in data ----
 # historic precip spatial metadata (county based)
-hist_precip_metadata_county_based_coast_albers <- st_read(paste0(hist_precip_spatial_data_input_path, "county_based/hist_precip_metadata_coast_albers.shp"))
+hist_precip_metadata_county_based_coast_albers <- st_read(paste0(hist_precip_spatial_data_input_path, "county_based/hist_precip_metadata_coast_albers_test.shp"))
 
 # historic precip spatial metadata (watershed based)
 
@@ -141,6 +142,11 @@ calculate_event_status <- function(obs_data, frcst_data) {
 
 
 # ---- 5. county based: join hist precip metadata and data ----
+# get number of unique sites
+# length(unique(hist_precip_metadata_county_based_coast_albers$loc_id[hist_precip_metadata_county_based_coast_albers$cmb_class == "urban_coast"]))
+# length(unique(hist_precip_metadata_county_based_coast_albers$loc_id[hist_precip_metadata_county_based_coast_albers$cmb_class == "non-urban_coast"]))
+# 162+190
+
 # join precip data to coastal data
 hist_precip_coast_data <- hist_precip_metadata_county_based_coast_albers %>%
   st_drop_geometry() %>%
@@ -186,16 +192,15 @@ frcst_data <- ndfd_calcs_county_based_data %>%
 # combine observed and forecasted data
 compare_daily_data <- left_join(obs_data, frcst_data, by = c("loc_id", "date_ymd")) %>%
   select(loc_id, date_ymd, valid_period_hrs, cmb_class, precip_in, precip_frcst_in) %>%
-  mutate(event_status = case_when(precip_in > 0 & precip_frcst_in > 0 ~ "correct_event",
+  mutate(event_type = case_when(precip_in > 0 & precip_frcst_in > 0 ~ "correct_event",
                                   precip_in == 0 & precip_frcst_in == 0 ~ "correct_no-event",
                                   precip_in > 0 & precip_frcst_in == 0 ~ "incorrect_event",
                                   precip_in == 0 & precip_frcst_in > 0 ~ "incorrect_no-event",
                                   precip_in >= 0 & is.na(precip_frcst_in) == TRUE ~ "no_forecast"),
          month = month(date_ymd))
-# mutate(precip_frcst_in_check = precip_frcst_in * (1000) * (1/100) * (2.54))
 
 # find the number of days that don't have a forecast
-length(unique(compare_daily_data$date_ymd[compare_daily_data$event_status == "no_forecast"]))
+length(unique(compare_daily_data$date_ymd[compare_daily_data$event_type == "no_forecast"]))
 # it's 4 for 2015
 
 # max number of days per month key
@@ -205,7 +210,7 @@ max_days_per_month_key <- data.frame(month = month_seq,
 
 # count number of observations per month for each station
 station_monthly_obs_count <- compare_daily_data %>%
-  filter(event_status != "no_forecast") %>% # filtuer out no_forecast days for now (= 4 days for 2015)
+  filter(event_type != "no_forecast") %>% # filtuer out no_forecast days for now (= 4 days for 2015)
   ungroup() %>%
   select(loc_id, date_ymd) %>%
   distinct(loc_id, date_ymd) %>%
@@ -216,30 +221,30 @@ station_monthly_obs_count <- compare_daily_data %>%
   mutate(percent_complete = num_days_available/max_num_days)
 
 # count number of stations in different event statuses per month
-station_event_status_monthly_summary <- compare_daily_data %>%
-  filter(event_status != "no_forecast") %>% # filtuer out no_forecast days for now (= 4 days for 2015)
+station_event_type_monthly_summary <- compare_daily_data %>%
+  filter(event_type != "no_forecast") %>% # filtuer out no_forecast days for now (= 4 days for 2015)
   ungroup() %>%
-  group_by(loc_id, month, cmb_class, event_status, valid_period_hrs) %>%
+  group_by(loc_id, month, cmb_class, event_type, valid_period_hrs) %>%
   summarize(num_days = n()) %>% # count(name = "num_days") %>%
   left_join(station_monthly_obs_count, by = c("loc_id", "month")) %>%
   mutate(perc_month = round((num_days/num_days_available) * 100, 3))
 
 # calculate the mean perc_month for different event statuses (summary)
-station_event_status_monthly_summary_mean <- station_event_status_monthly_summary %>%
+station_event_type_monthly_summary_mean <- station_event_type_monthly_summary %>%
   ungroup() %>%
-  group_by(cmb_class, valid_period_hrs, event_status) %>%
+  group_by(cmb_class, valid_period_hrs, event_type) %>%
   summarize(mean_perc_month = mean(perc_month, na.rm = TRUE))
 
 # calculate the mean perc_month by month for different event statuses for 24 hr (detail)
-station_event_status_month_detail_mean_24hr <- station_event_status_monthly_summary %>%
+station_event_type_month_detail_mean_24hr <- station_event_type_monthly_summary %>%
   filter(valid_period_hrs == 24) %>%
   ungroup() %>%
-  group_by(cmb_class, month, event_status) %>%
+  group_by(cmb_class, month, event_type) %>%
   summarize(mean_perc_month = mean(perc_month, na.rm = TRUE))
 
 # calculate NSE for correct_events by cmb_class and by month for 24 hr
 compare_daily_nse_summary <- compare_daily_data %>%
-  filter(event_status == "correct_event" & valid_period_hrs == 24) %>%
+  filter(event_type == "correct_event" & valid_period_hrs == 24) %>%
   ungroup() %>%
   group_by(cmb_class, month) %>%
   summarize(nse = calculate_nse(obs_data = precip_in, frcst_data = precip_frcst_in),
@@ -271,15 +276,15 @@ dev.off()
 # plot percent of available monthly data in different event categories
 pdf(paste0(figure_path, "percent_month_vs_event_by_period.pdf"), width = 15, height = 7)
 ggplot() +
-  geom_boxplot(data = station_event_status_monthly_summary, 
-               aes(x = event_status, y = perc_month, fill = cmb_class),
+  geom_boxplot(data = station_event_type_monthly_summary, 
+               aes(x = event_type, y = perc_month, fill = cmb_class),
                outlier.color = "black") +
-  geom_point(data = station_event_status_monthly_summary_mean,
-             aes(x = event_status, y = mean_perc_month, fill = cmb_class), 
+  geom_point(data = station_event_type_monthly_summary_mean,
+             aes(x = event_type, y = mean_perc_month, fill = cmb_class), 
              pch = 23, size = 3, color = "black", position = position_dodge(width = 0.75, preserve = "total")) +
   geom_abline(slope = 0, intercept = 50, lty = 2) +
   facet_wrap(~ valid_period_hrs) +
-  xlab("Event Status") +
+  xlab("Event Occurence Type") +
   ylab("Percent of Each Month") + 
   scale_fill_manual(values = my_cmb_class_colors) +
   theme_bw() +
@@ -296,13 +301,13 @@ dev.off()
 # plot percent of available monthly data by month for 24 hrs only (since that's typically the best)
 pdf(paste0(figure_path, "percent_month_vs_month_by_event_24hr.pdf"), width = 12, height = 10)
 ggplot() +
-  geom_boxplot(data = station_event_status_monthly_summary %>% filter(valid_period_hrs == 24),
+  geom_boxplot(data = station_event_type_monthly_summary %>% filter(valid_period_hrs == 24),
                aes(x = as.factor(month), y = perc_month, fill = cmb_class)) +
-  geom_point(data = station_event_status_month_detail_mean_24hr,
+  geom_point(data = station_event_type_month_detail_mean_24hr,
              aes(x = as.factor(month), y = mean_perc_month, fill = cmb_class), 
              pch = 23, size = 3, color = "black", position = position_dodge(width = 0.75, preserve = "total")) +
   geom_abline(slope = 0, intercept = 50, lty = 2) +
-  facet_wrap(~ event_status) +
+  facet_wrap(~ event_type) +
   xlab("Month") +
   ylab("Percent of Each Month") + 
   scale_fill_manual(values = my_cmb_class_colors) +
@@ -318,8 +323,8 @@ dev.off()
 
 # plot obs vs forecast for different event statuses for correct_event status in 24 hrs only
 pdf(paste0(figure_path, "obs_vs_frcst_by_month_24hr.pdf"), width = 12, height = 10)
-ggplot(data = compare_daily_data %>% filter(event_status == "correct_event" & valid_period_hrs == 24)) +
-  geom_point(aes(x = precip_frcst_in, y = precip_in, fill = cmb_class), pch = 21, size = 3, color = "black") +
+ggplot(data = compare_daily_data %>% filter(event_type == "correct_event" & valid_period_hrs == 24)) +
+  geom_point(aes(x = precip_frcst_in, y = precip_in, fill = cmb_class), pch = 21, size = 2, color = "black") +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
   facet_wrap(~ month, ncol = 3, nrow = 4) +
   xlim(0, 10) +
