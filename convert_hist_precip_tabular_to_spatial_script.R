@@ -27,10 +27,12 @@ library(sf)
 # ---- 2. define paths and projections ----
 
 # historic precip tabular data path
-tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/hist_precip_data/"
+# tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/hist_precip_data/"
+tabular_data_input_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/data/tabular/sheila_generated/hist_precip_data/"
 
 # histric precip spatial data path
-spatial_data_output_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/hist_precip_data/"
+# spatial_data_output_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/hist_precip_data/"
+spatial_data_output_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/data/spatial/sheila_generated/hist_precip_data/"
 
 # define epsg for wgs 84
 wgs84_epsg <- 4326
