@@ -23,28 +23,28 @@
 library(tidyverse)
 library(lubridate)
 library(sf)
+library(caret)
+library(broom)
+
 
 
 # ---- 2. define paths and projections ----
 # spatial data path
-# hist_precip_spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/hist_precip_data/"
-hist_precip_spatial_data_input_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/data/spatial/sheila_generated/hist_precip_data/"
+hist_precip_spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/hist_precip_data/"
 
 # historic tabular data path
-# hist_precip_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/hist_precip_data/"
-hist_precip_tabular_data_input_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/data/tabular/sheila_generated/hist_precip_data/"
+hist_precip_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/hist_precip_data/"
 
 # path to ndfd tabular data
-# ndfd_sco_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/ndfd_sco_hist/"
-ndfd_sco_tabular_data_input_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/data/tabular/sheila_generated/ndfd_sco_hist/"
+ndfd_sco_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/ndfd_sco_hist/"
 
 # path to figure
-figure_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/figures/"
+figure_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/results/agu_2020/figures/"
 
 
 # ---- 3. load in data ----
 # historic precip spatial metadata (county based)
-hist_precip_metadata_county_based_coast_albers <- st_read(paste0(hist_precip_spatial_data_input_path, "county_based/hist_precip_metadata_coast_albers_test.shp"))
+hist_precip_metadata_county_based_coast_albers <- st_read(paste0(hist_precip_spatial_data_input_path, "county_based/hist_precip_metadata_coast_albers.shp"))
 
 # historic precip spatial metadata (watershed based)
 
@@ -116,29 +116,29 @@ calculate_nse <- function(obs_data, frcst_data) {
 }
 
 # calculate slope
-calculate_lm_coeffs <- function(obs_data, frcst_data) {
-  # obs_data is a list of observed data
-  # frcst_data is a list of forecased (or simulated or modeled) data
-  
-  # fit linear model with obs vs frcst
-  temp_lm <- lm(obs_data ~ frcst_data)
-  
-  # save intercept
-  intercept <- round(as.numeric(temp_lm$coefficients[1]), 3)
-  
-  # save slope
-  slope <- round(as.numeric(temp_lm$coefficients[2]), 3)
-  
-  # return outputs
-  return(c(intercept, slope))
-}
+# calculate_lm_coeffs <- function(obs_data, frcst_data) {
+#   # obs_data is a list of observed data
+#   # frcst_data is a list of forecased (or simulated or modeled) data
+#   
+#   # fit linear model with obs vs frcst
+#   temp_lm <- lm(obs_data ~ frcst_data)
+#   
+#   # save intercept
+#   intercept <- round(as.numeric(temp_lm$coefficients[1]), 3)
+#   
+#   # save slope
+#   slope <- round(as.numeric(temp_lm$coefficients[2]), 3)
+#   
+#   # return outputs
+#   return(c(intercept, slope))
+# }
 
 # calculate event status
-calculate_event_status <- function(obs_data, frcst_data) {
-  # obs_data is a list of observed data
-  # frcst_data is a list of forecased (or simulated or modeled) data
-  
-}
+# calculate_event_status <- function(obs_data, frcst_data) {
+#   # obs_data is a list of observed data
+#   # frcst_data is a list of forecased (or simulated or modeled) data
+#   
+# }
 
 
 # ---- 5. county based: join hist precip metadata and data ----
@@ -150,20 +150,20 @@ calculate_event_status <- function(obs_data, frcst_data) {
 # join precip data to coastal data
 hist_precip_coast_data <- hist_precip_metadata_county_based_coast_albers %>%
   st_drop_geometry() %>%
-  left_join(hist_precip_data, by = "loc_id") %>%
-  select(loc_id, cmb_class, date_et, precip_in) %>%
-  mutate(year = year(date_et),
-         month = str_pad(as.character(month(date_et)), width = 2, side = "left", pad = "0"),
-         day = str_pad(as.character(day(date_et)), width = 2, side = "left", pad = "0"),
-         month_year = paste0(month, "_", year),
-         date_ymd = paste0(year, "-", month, "-", day)) %>%
-  filter(year == 2015)
+  dplyr::left_join(hist_precip_data, by = "loc_id") %>%
+  dplyr::select(loc_id, cmb_class, date_et, precip_in) %>%
+  dplyr::mutate(year = year(date_et),
+                month = str_pad(as.character(month(date_et)), width = 2, side = "left", pad = "0"),
+                day = str_pad(as.character(day(date_et)), width = 2, side = "left", pad = "0"),
+                month_year = paste0(month, "_", year),
+                date_ymd = paste0(year, "-", month, "-", day)) %>%
+  dplyr::filter(year == 2015)
 
 # daily sum per station
 daily_hist_precip_coast_data <- hist_precip_coast_data %>%
-  ungroup() %>%
-  group_by(loc_id, date_ymd, cmb_class) %>%
-  summarize(precip_in = sum(precip_in, na.rm = TRUE))
+  dplyr::ungroup() %>%
+  dplyr::group_by(loc_id, date_ymd, cmb_class) %>%
+  dplyr::summarize(precip_in = sum(precip_in, na.rm = TRUE))
 
 # monthly avg summaries
 # monthly_avg_hist_precip_coast_data <- hist_precip_coast_data %>%
@@ -173,31 +173,31 @@ daily_hist_precip_coast_data <- hist_precip_coast_data %>%
 
 # monthly total summaries
 monthly_sum_hist_precip_coast_data <- hist_precip_coast_data %>%
-  ungroup() %>%
-  group_by(loc_id, month, cmb_class) %>%
-  summarize(monthly_sum_precip_in = sum(precip_in, na.rm = TRUE))
+  dplyr::ungroup() %>%
+  dplyr::group_by(loc_id, month, cmb_class) %>%
+  dplyr::summarize(monthly_sum_precip_in = sum(precip_in, na.rm = TRUE))
 
 
 # ---- 6. county based: compare results -----
 # clean up observed data (historic precip)
 obs_data <- daily_hist_precip_coast_data %>%
-  select(loc_id, cmb_class, date_ymd, precip_in)
+  dplyr::select(loc_id, cmb_class, date_ymd, precip_in)
 
-# clean up forecasted data (ndfd)
+# clean up foretasted data (ndfd)
 frcst_data <- ndfd_calcs_county_based_data %>%
-  mutate(date_ymd = as.character(datetime_uct),
-         precip_frcst_in = qpf_in) %>%
-  select(loc_id, date_ymd, valid_period_hrs, precip_frcst_in)
+  dplyr::mutate(date_ymd = as.character(datetime_uct),
+                precip_frcst_in = qpf_in) %>%
+  dplyr::select(loc_id, date_ymd, valid_period_hrs, precip_frcst_in)
 
-# combine observed and forecasted data
+# combine observed and foretasted data
 compare_daily_data <- left_join(obs_data, frcst_data, by = c("loc_id", "date_ymd")) %>%
-  select(loc_id, date_ymd, valid_period_hrs, cmb_class, precip_in, precip_frcst_in) %>%
-  mutate(event_type = case_when(precip_in > 0 & precip_frcst_in > 0 ~ "correct_event",
-                                  precip_in == 0 & precip_frcst_in == 0 ~ "correct_no-event",
-                                  precip_in > 0 & precip_frcst_in == 0 ~ "incorrect_event",
-                                  precip_in == 0 & precip_frcst_in > 0 ~ "incorrect_no-event",
-                                  precip_in >= 0 & is.na(precip_frcst_in) == TRUE ~ "no_forecast"),
-         month = month(date_ymd))
+  dplyr::select(loc_id, date_ymd, valid_period_hrs, cmb_class, precip_in, precip_frcst_in) %>%
+  dplyr::mutate(event_type = case_when(precip_in > 0 & precip_frcst_in > 0 ~ "correct_event",
+                                       precip_in == 0 & precip_frcst_in == 0 ~ "correct_no-event",
+                                       precip_in > 0 & precip_frcst_in == 0 ~ "incorrect_event",
+                                       precip_in == 0 & precip_frcst_in > 0 ~ "incorrect_no-event",
+                                       precip_in >= 0 & is.na(precip_frcst_in) == TRUE ~ "no_forecast"),
+                month = month(date_ymd))
 
 # find the number of days that don't have a forecast
 length(unique(compare_daily_data$date_ymd[compare_daily_data$event_type == "no_forecast"]))
@@ -210,53 +210,126 @@ max_days_per_month_key <- data.frame(month = month_seq,
 
 # count number of observations per month for each station
 station_monthly_obs_count <- compare_daily_data %>%
-  filter(event_type != "no_forecast") %>% # filtuer out no_forecast days for now (= 4 days for 2015)
-  ungroup() %>%
-  select(loc_id, date_ymd) %>%
-  distinct(loc_id, date_ymd) %>%
-  mutate(month = month(date_ymd)) %>% # recreate this
-  group_by(loc_id, month) %>%
-  summarize(num_days_available = n()) %>%
-  left_join(max_days_per_month_key, by = "month") %>%
-  mutate(percent_complete = num_days_available/max_num_days)
+  dplyr::filter(event_type != "no_forecast") %>% # filtuer out no_forecast days for now (= 4 days for 2015)
+  dplyr::ungroup() %>%
+  dplyr::select(loc_id, date_ymd) %>%
+  dplyr::distinct(loc_id, date_ymd) %>%
+  dplyr::mutate(month = month(date_ymd)) %>% # recreate this
+  dplyr::group_by(loc_id, month) %>%
+  dplyr::summarize(num_days_available = n()) %>%
+  dplyr::left_join(max_days_per_month_key, by = "month") %>%
+  dplyr::mutate(percent_complete = num_days_available/max_num_days)
 
 # count number of stations in different event statuses per month
 station_event_type_monthly_summary <- compare_daily_data %>%
-  filter(event_type != "no_forecast") %>% # filtuer out no_forecast days for now (= 4 days for 2015)
-  ungroup() %>%
-  group_by(loc_id, month, cmb_class, event_type, valid_period_hrs) %>%
-  summarize(num_days = n()) %>% # count(name = "num_days") %>%
-  left_join(station_monthly_obs_count, by = c("loc_id", "month")) %>%
-  mutate(perc_month = round((num_days/num_days_available) * 100, 3))
+  dplyr::filter(event_type != "no_forecast") %>% # filtuer out no_forecast days for now (= 4 days for 2015)
+  dplyr::ungroup() %>%
+  dplyr::group_by(loc_id, month, cmb_class, event_type, valid_period_hrs) %>%
+  dplyr::summarize(num_days = n()) %>% # count(name = "num_days") %>%
+  dplyr::left_join(station_monthly_obs_count, by = c("loc_id", "month")) %>%
+  dplyr::mutate(perc_month = round((num_days/num_days_available) * 100, 3))
 
 # calculate the mean perc_month for different event statuses (summary)
 station_event_type_monthly_summary_mean <- station_event_type_monthly_summary %>%
-  ungroup() %>%
-  group_by(cmb_class, valid_period_hrs, event_type) %>%
-  summarize(mean_perc_month = mean(perc_month, na.rm = TRUE))
+  dplyr::ungroup() %>%
+  dplyr::group_by(cmb_class, valid_period_hrs, event_type) %>%
+  dplyr::summarize(mean_perc_month = mean(perc_month, na.rm = TRUE))
 
 # calculate the mean perc_month by month for different event statuses for 24 hr (detail)
 station_event_type_month_detail_mean_24hr <- station_event_type_monthly_summary %>%
-  filter(valid_period_hrs == 24) %>%
-  ungroup() %>%
-  group_by(cmb_class, month, event_type) %>%
-  summarize(mean_perc_month = mean(perc_month, na.rm = TRUE))
+  dplyr::filter(valid_period_hrs == 24) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(cmb_class, month, event_type) %>%
+  dplyr::summarize(mean_perc_month = mean(perc_month, na.rm = TRUE))
 
 # calculate NSE for correct_events by cmb_class and by month for 24 hr
 compare_daily_nse_summary <- compare_daily_data %>%
-  filter(event_type == "correct_event" & valid_period_hrs == 24) %>%
-  ungroup() %>%
-  group_by(cmb_class, month) %>%
-  summarize(nse = calculate_nse(obs_data = precip_in, frcst_data = precip_frcst_in),
-            num_observations = n(),
-            num_stations = length(unique(loc_id)))
+  dplyr::filter(event_type == "correct_event" & valid_period_hrs == 24) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(cmb_class, month) %>%
+  dplyr::summarize(nse = calculate_nse(obs_data = precip_in, frcst_data = precip_frcst_in),
+                   num_observations = n(),
+                   num_stations = length(unique(loc_id)))
+
+# ---- 7. calculate confusion matrix stats ---- 
+# combine observed and foretasted data (confusion matrix)
+compare_daily_data_conf <- left_join(obs_data, frcst_data, by = c("loc_id", "date_ymd")) %>%
+  dplyr::select(loc_id, date_ymd, valid_period_hrs, cmb_class, precip_in, precip_frcst_in) %>%
+  dplyr::mutate(obs_occ = if_else(precip_in > 0, "event", "non-event"),
+                frcst_occ = if_else(precip_frcst_in > 0, "event", "non-event"),
+                month = month(date_ymd)) %>%
+  dplyr::select(-precip_in, -precip_frcst_in)
+
+# function
+calculate_confusion_matrix <- function(frcst_data, obs_data) {
+  data = table(frcst_data, obs_data)
+  confusion_matrix_output <- caret::confusionMatrix(data = data, positive = "event")
+  
+  # tidy output
+  tidy_output <- broom::tidy(confusion_matrix_output)
+  
+  # calculate accuracy
+  acc_calc = (confusion_matrix_output$table[1] + confusion_matrix_output$table[4])/sum(confusion_matrix_output$table)
+  # true positives + true negatives / n
+  
+  # get sensitivity (true positives) and specificity (true negatives)
+  tp_calc = tidy_output$estimate[tidy_output$term == "sensitivity"]
+  tn_calc = tidy_output$estimate[tidy_output$term == "specificity"]
+  
+  # create output data
+  all_calcs <- list(set_names(c(acc_calc, tp_calc, tn_calc), c("accuracy", "tp_rate", "tn_rate")))
+  
+  # return result
+  return(all_calcs)
+}
+
+# take out months that are less than 90% complete
+confusion_complete_month_key <- compare_daily_data_conf %>%
+  na.omit() %>% # remove days with NA values
+  dplyr::ungroup() %>%
+  dplyr::group_by(loc_id, month, valid_period_hrs) %>% 
+  dplyr::count() %>%
+  dplyr::left_join(max_days_per_month_key, by = "month") %>%
+  dplyr::mutate(perc_complete = n/max_num_days) %>%
+  dplyr::filter(perc_complete >= 0.90) %>%
+  dplyr::mutate(keep_key = paste0(loc_id, "_", month, "_", valid_period_hrs)) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(keep_key)
+
+# cmb_class key
+cmb_class_key <- compare_daily_data_conf %>%
+  dplyr::ungroup() %>%
+  dplyr::select(loc_id, cmb_class) %>%
+  dplyr::distinct()
+  
+# confusion calcs by site for each valid period and month
+confusion_month_calc_data <- compare_daily_data_conf %>%
+  na.omit() %>% # remove days with NA values
+  dplyr::mutate(keep_key = paste0(loc_id, "_", month, "_", valid_period_hrs)) %>%
+  dplyr::right_join(confusion_complete_month_key, by = "keep_key") %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(loc_id, month, valid_period_hrs) %>%
+  # dplyr::count() # to check that it's the same length as confusion_month_tally
+  dplyr::summarize(conf_mat_calc = calculate_confusion_matrix(frcst_data = frcst_occ, obs_data = obs_occ)) %>%
+  tidyr::unnest_wider(conf_mat_calc) %>%
+  dplyr::left_join(cmb_class_key, by = "loc_id")
+
+# pivot longer
+confusion_month_calc_data_long <- confusion_month_calc_data %>%
+  dplyr::select(loc_id, cmb_class, month:tn_rate) %>%
+  tidyr::pivot_longer(cols = accuracy:tn_rate, names_to = "event_occur_metric", values_to = "value")
+
+# max number of days per month key
+month_seq = seq(1,12,1)
+max_days_per_month_key <- data.frame(month = month_seq,
+                                     max_num_days = days_in_month(month(month_seq)))
 
 
-# ---- 7. poster plots ----
+# ---- 8. poster plots ----
 # set colors for non-urban (green) and urban (yellow)
 my_cmb_class_colors = c("#66c2a5", "#ffd92f")
 
-# plot observed monthly totaly precip at each station
+# plot observed monthly total precip at each station
 pdf(paste0(figure_path, "obs_precip_vs_month.pdf"), width = 12, height = 10)
 ggplot(data = monthly_sum_hist_precip_coast_data) +
   geom_boxplot(aes(x = as.factor(as.numeric(month)), y = monthly_sum_precip_in, fill = cmb_class)) +
@@ -342,7 +415,45 @@ ggplot(data = compare_daily_data %>% filter(event_type == "correct_event" & vali
         #legend.position = "none")
 dev.off()
 
+# plot event occur metric value vs valid time for each cmb_class
+pdf(paste0(figure_path, "event_occur_metric_vs_period.pdf"), width = 15, height = 7)
+ggplot() +
+  geom_boxplot(data = confusion_month_calc_data_long, 
+               aes(x = as.factor(valid_period_hrs), y = value, fill = cmb_class),
+               outlier.color = "black") +
+  facet_wrap(~ event_occur_metric) +
+  xlab("Forecast Validation Period (hrs)") +
+  ylab("Monthly Metric") + 
+  scale_fill_manual(values = my_cmb_class_colors) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        #axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
 
+# plot event occur metric value vs month for 24 hrs only (since that's typically the best)
+pdf(paste0(figure_path, "event_occur_metric_vs_month_24hr.pdf"), width = 8, height = 12)
+ggplot() +
+  geom_boxplot(data = confusion_month_calc_data_long %>% filter(valid_period_hrs == 24),
+               aes(x = as.factor(month), y = value, fill = cmb_class)) +
+  facet_wrap(~ event_occur_metric, nrow = 3, ncol = 1) +
+  xlab("Month") +
+  ylab("Metric") + 
+  scale_fill_manual(values = my_cmb_class_colors) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
 
 # ---- extra county based: plot results ----
 ggplot(data = event_status_monthly_summary) +
