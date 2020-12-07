@@ -28,22 +28,17 @@ library(sf)
 
 
 # ---- 2. define paths and projections ----
-
 # spatial data path
-# spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/"
-spatial_data_input_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/data/spatial/sheila_generated/"
+spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/"
 
 # path to ndfd tabular inputs
-# ndfd_sco_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/ndfd_sco_hist_raw/"
-ndfd_sco_tabular_data_input_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/data/tabular/ndfd_sco_hist_raw/"
+ndfd_sco_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/ndfd_sco_hist_raw/"
 
 # path to ndfd spatial inputs
-# ndfd_sco_spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/ndfd_sco_hist/"
-ndfd_sco_spatial_data_input_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/data/spatial/sheila_generated/ndfd_sco_hist/"
+ndfd_sco_spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/ndfd_sco_hist/"
 
 # path to ndfd tabular outputs
-# ndfd_sco_tabular_data_output_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/ndfd_sco_hist/"
-ndfd_sco_tabular_data_output_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/data/tabular/sheila_generated/ndfd_sco_hist/"
+ndfd_sco_tabular_data_output_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/ndfd_sco_hist/"
 
 # results/figures
 # figures_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/results/figures/"
@@ -249,9 +244,9 @@ ndfd_calcs_county_based_data <- ndfd_pts_calcs_data
 
 # ---- 6. export all data ----
 # export county based spatial data
-st_write(hist_precip_metadata_logic_albers, paste0(spatial_data_input_path, "hist_precip_data/county_based/hist_precip_metadata_logic_albers_test.shp"), delete_layer = TRUE)
-st_write(hist_precip_metadata_coast_albers, paste0(spatial_data_input_path, "hist_precip_data/county_based/hist_precip_metadata_coast_albers_test.shp"), delete_layer = TRUE)
-st_write(hist_precip_metadata_coast_5kmbuf_albers, paste0(spatial_data_input_path, "hist_precip_data/county_based/hist_precip_metadata_coast_5kmbuf_albers_test.shp"), delete_layer = TRUE)
+st_write(hist_precip_metadata_logic_albers, paste0(spatial_data_input_path, "hist_precip_data/county_based/hist_precip_metadata_logic_albers.shp"), delete_layer = TRUE)
+st_write(hist_precip_metadata_coast_albers, paste0(spatial_data_input_path, "hist_precip_data/county_based/hist_precip_metadata_coast_albers.shp"), delete_layer = TRUE)
+st_write(hist_precip_metadata_coast_5kmbuf_albers, paste0(spatial_data_input_path, "hist_precip_data/county_based/hist_precip_metadata_coast_5kmbuf_albers.shp"), delete_layer = TRUE)
 
 # export county based ndfd calcs
 write_csv(ndfd_calcs_county_based_data, paste0(ndfd_sco_tabular_data_output_path, "ndfd_calcs_county_based_data_to20150701to20151231.csv"))

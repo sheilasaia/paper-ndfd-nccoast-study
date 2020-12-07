@@ -27,12 +27,10 @@ library(sf)
 
 # ---- 2. set paths and define projections ----
 # spatial data input path
-# spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/"
-spatial_data_input_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/data/spatial/"
+spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/"
 
 # spatial data output path
-# spatial_data_output_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/"
-spatial_data_output_path <- "/Users/sheila/Desktop/transfer/shellcast_analysis/data/spatial/sheila_generated/"
+spatial_data_output_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/"
 
 # define epsg and proj for CONUS Albers projection (projecting to this)
 conus_albers_epsg <- 5070
