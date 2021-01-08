@@ -97,9 +97,13 @@ data_export_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_ana
 
 # ---- 4. get data for multiple networks ----
 # list all networks to pull
-my_ncsco_networks = c("ASOS", "AWOS", "BUOY", "CMAN", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
-# my_ncsco_networks = c("ASOS", "AWOS", "BUOY", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
+my_ncsco_networks = c("ASOS", "AWOS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
+# my_ncsco_networks = c("ASOS", "AWOS", "BUOY", "CMAN", "CoCoRaHS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
+# BUOY there's no data coming up
 # CMAN there's no data coming up
+# CoCoRaHS data get directly from their website (for free)
+# NCSU gives 504 error for data beyond May 1, 2015
+# NOS is having issues with metadata commas (see email to john)
 
 for (n in 7:7){ #length(my_ncsco_networks)) {
   # pick network
