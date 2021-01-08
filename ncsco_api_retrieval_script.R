@@ -105,7 +105,7 @@ my_ncsco_networks = c("ASOS", "AWOS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW"
 # NCSU gives 504 error for data beyond May 1, 2015
 # NOS is having issues with metadata commas (see email to john)
 
-for (n in 7:7){ #length(my_ncsco_networks)) {
+for (n in 1:length(my_ncsco_networks)) {
   # pick network
   temp_ncsco_network <- my_ncsco_networks[n]
   
