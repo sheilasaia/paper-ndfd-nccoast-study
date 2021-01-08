@@ -120,7 +120,8 @@ for (n in 7:7){ #length(my_ncsco_networks)) {
   data_raw <- data_list$data_raw
   
   # define metadata and keep replicates
-  metadata_raw <- data_list$metadata_raw
+  metadata_raw <- data_list$metadata_raw %>%
+    distinct() # keep unique values
   
   # only export if there's data
   if (dim(data_raw)[1] > 0) {
