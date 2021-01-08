@@ -117,7 +117,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     
     # query
     temp_data_raw <- httr::GET(query_url_fix)
-    
+
     # print status
     print("query finished")
     
@@ -133,8 +133,9 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
       temp_data_text_raw <- httr::content(temp_data_raw, "text")
       
       # check if there's data
-      temp_data_check <- read_csv(temp_data_text_raw, comment = "##", col_types = cols())
-      
+      # temp_data_check <- read_csv(temp_data_text_raw, comment = "##", col_types = cols())
+      temp_data_check <- read_csv(temp_data_text_raw, comment = "##", col_types = list(col_character(), col_character(), col_character(), col_number(), col_character(), col_number(), col_character(), col_character(), col_character(), col_character(), col_number(), col_number()))
+            
       # if there's data then run
       if (dim(temp_data_check)[1] > 0) {
         
@@ -173,7 +174,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     # if there's no data or server times out
     else {
       # print entry status 
-      print(paste0("no data for step ", j, " of ", num_steps, " steps"))
+      print(paste0(temp_data_raw_status, " error: no data for step ", j, " of ", num_steps, " steps"))
       
       # move to next iterator
       next
