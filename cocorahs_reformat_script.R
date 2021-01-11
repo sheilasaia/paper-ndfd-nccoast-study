@@ -2,11 +2,9 @@
 
 # ---- 1. load libraries ----
 library(tidyverse)
-library(sf)
 
 
 # ---- 2. define paths ----
-
 # tabular data paths
 tabular_data_raw_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/cocorahs_raw/"
 
@@ -25,12 +23,12 @@ cocorahs_metadata <- cocorahs_data_raw %>%
   select(location_id = station_id, location_name = station_name, latitude_degrees_north = lat, longitude_degrees_east = long) %>%
   distinct_all() %>%
   # add columns so this is compatible with NC SCO API outputs
-  mutate(network_type = "COCORAHS",
+  mutate(network_type = "CoCoRaHS",
          city = NA, 
          county = NA, 
          state = NA, 
          elevation_ft_chr = NA, 
-         supporting_agency_for_location = "COCORAHS",
+         supporting_agency_for_location = "CoCoRaHS",
          start_date_chr = NA,
          end_date_chr = NA,
          obtypes_available = NA) %>%
@@ -39,7 +37,20 @@ cocorahs_metadata <- cocorahs_data_raw %>%
 
 # ---- 5. separate out data ----
 cocorahs_data <- cocorahs_data_raw %>%
-  select(location_id = station_id, datetime_chr_et = datetime_est, precip_in)
+  select(location_id = station_id, datetime_chr_et = datetime_est, precip_in) %>%
+  # add columns so this is compatible with NC SCO API outputs
+  mutate(var = "precip",
+         value = precip_in,
+         unit = "in",
+         score = NA,
+         nettype = NA,
+         vartype = NA,
+         obtime = NA,
+         obtype = NA,
+         obnum = NA,
+         value_accum = NA) %>%
+  select(location_id, datetime_chr_et, var:value_accum)
+  
 
 
 # ---- 6. export data ----
