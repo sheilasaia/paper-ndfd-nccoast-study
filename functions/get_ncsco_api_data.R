@@ -71,6 +71,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
                          score = numeric(),
                          nettype = character(),
                          vartype = character(),
+                         obtime = character(),
                          obtype = character(),
                          obnum = numeric(),
                          value_accum = numeric())
@@ -153,12 +154,29 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
                  location_id = as.character(location_id)) %>%
           select(location_id:longitude_degrees_east, elevation_feet_chr, supporting_agency_for_location, start_date_chr, end_date_chr, obtypes_available) 
         
-        # append data
-        data_raw <- bind_rows(temp_data_raw, data_raw)
-        metadata_raw <- bind_rows(temp_metadata_raw, metadata_raw)
+        # need check to stop if column names aren't the same
+        temp_data_cols <- names(temp_data_raw)
+        data_cols <- names(data_raw)
+        cols_check <- identical(temp_data_cols, data_cols) # must be TRUE
         
-        # print entry status
-        print(paste0("appended step ", j, " of ", num_steps, " steps"))
+        # append if columns are the same
+        if (cols_check == TRUE) {
+          # append data
+          data_raw <- bind_rows(temp_data_raw, data_raw)
+          metadata_raw <- bind_rows(temp_metadata_raw, metadata_raw)
+          
+          # print entry status
+          print(paste0("appended step ", j, " of ", num_steps, " steps"))
+          
+        }
+        
+        # print issue if not the same
+        else {
+          print(paste0("cannot append step ", j, " of ", num_steps, "steps because columns don't match expected"))
+        
+          # move to next iterator
+          next
+        }
         
       }
       
