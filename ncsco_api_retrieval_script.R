@@ -8,11 +8,11 @@
 
 # ---- notes ----
 # notes:
-# nc sco api is here: https://climate.ncsu.edu/api/beta/
-# nc sco api help: https://climate.ncsu.edu/api/beta/data?help
+# nc sco api is here: https://api.climate.ncsu.edu/
+# nc sco api help: https://api.climate.ncsu.edu/help
 
 # networks available with weater data: 
-# see https://climate.ncsu.edu/api/beta/networks for the full list
+# see https://api.climate.ncsu.edu/networks for the full list
 # Automated Surface Observation Station (ASOS) - operated by the National Weather Service (NWS) and Federal Aviation Association (FAA)
 # Automated Weather Observing Station (AWOS) - operated by the Federal Aviation Association (FAA)
 # Buoy Network (BUOY) - operated by the National Data Buoy Center (NDBC)
@@ -29,17 +29,17 @@
 # need to set up the url to access data
 # get daily precip (1 day interval) hmtl outputs for COOP from month of Jan 2016
 # url looks like...
-# https://climate.ncsu.edu/api/beta/data.php?var=precip1m&loc=type=COOP;state=NC&int=1 day&start=2016-01-01&end=2016-01-31&&hash=cf71ae662d7477da3c53da8a1b6d87e49406a28b
+# https://api.climate.ncsu.edu/data.php?var=precip1m&loc=type=COOP;state=NC&int=1 day&start=2016-01-01&end=2016-01-31&&hash=cf71ae662d7477da3c53da8a1b6d87e49406a28b
 
 # get daily precip (1 day interval) xls outputs for COOP from month of Jan 2016
 # url looks like...
-# https://climate.ncsu.edu/api/beta/data.php?var=precip1m&loc=type=COOP;state=NC&int=1 day&start=2016-01-01&end=2016-01-31&output=xls&hash=cf71ae662d7477da3c53da8a1b6d87e49406a28b
+# https://api.climate.ncsu.edu/data.php?var=precip1m&loc=type=COOP;state=NC&int=1 day&start=2016-01-01&end=2016-01-31&output=xls&hash=cf71ae662d7477da3c53da8a1b6d87e49406a28b
 
 # can also save as csv but header isn't set up with commas so would have to find a way to clean this up
 # variables type=data or type=meta don't seem to be working
 
-# find info on available url parameter codes here: https://climate.ncsu.edu/api/beta/parameters
-# find info on api arguments here: https://climate.ncsu.edu/api/beta/help
+# find info on available url parameter codes here: https://api.climate.ncsu.edu/parameters
+# find info on api arguments here: https://api.climate.ncsu.edu/help
 
 # data column descriptions
 # location - location of data
@@ -61,6 +61,7 @@
 
 # ---- to do ----
 
+# TODO deal with column type parsing issue for import of NOS data (score is numeric but sometimes character...)
 # TODO regenerate api key (hash) code for api
 # TODO fill out metadata column description in notes
 # TODO make tests in case data isn't available and nothing to append or too much to append

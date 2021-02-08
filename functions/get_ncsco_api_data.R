@@ -96,7 +96,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     temp_end_date_sel <- date_step_list$end_date[j]
     
     # define url parts that stay the same
-    base_url <- "https://climate.ncsu.edu/api/beta/data.php?"
+    base_url <- "https://api.climate.ncsu.edu/data.php?"
     url_var <- paste0("var=", ncsco_var, "&")
     url_loc <- paste0("loc=type=", ncsco_network, "&")
     url_state <- "state=NC&"
@@ -105,7 +105,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     url_end_date <- paste0("end=", temp_end_date_sel, "&")
     url_output <- "output=csv&" # csv output
     url_key <- paste0("hash=", api_key)
-    # additional api arguments are here: https://climate.ncsu.edu/api/beta/help
+    # additional api arguments are here: https://api.climate.ncsu.edu/help
     
     # put all together to get query url
     query_url <- paste0(base_url, url_var, url_loc, url_state, url_int, url_start_date, url_end_date, url_output, url_key)
