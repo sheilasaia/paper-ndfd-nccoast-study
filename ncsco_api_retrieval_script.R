@@ -42,28 +42,39 @@
 # find info on api arguments here: https://api.climate.ncsu.edu/help
 
 # data column descriptions
-# location - location of data
-# datetime - datetime of observation (timezone?), default is US/Eastern
+# location_id - originally called "location" in API output, renamed to match similar metadata column (as db key), location of data
+# location_id_code - location of data (replicate of location_id?)
+# datetime_et - originally called "datetime" in API output, datetime of observation (timezone?), default is US/Eastern
 # var - requested variable
 # value - value of variable, if no value (MV = Missing Value, NA = Not Applicable)
 # unit - unit of value
 # score - quality Control score of value (0 = Good, 1 = Likely Good, 2 = Likely Bad, 3 = Bad, -1 = Pending, NA = Not Available)
-# nettype - network type Code (M = Measured, C = Calculated, S = Station, L = Location)
+# nettype - network type code (M = Measured, C = Calculated, S = Station, L = Location)
 # vartype - variable type code (A = Aggregate of Multiple Values, M = Metadata, I = Single Value, S = Subset of Multiple Values)
+# obtime - observation time (timezone?), default is US/Eastern
 # obtype - observation type Code (D = Daily, H = Hourly, O = Minute, S = Special)
 # obnum - number of observations used for value
-# value_accum - accumulated value of numeric variable (grouped by location)
+# value_accum - accumulated value of numeric variable (grouped by location and month)
 
 # metadata column description
-
-
+# location_id - originally called "location" in API output, renamed to match similar metadata column (as db key), location of data
+# location_id_code - location of data (replicate of location_id?)
+# network_type - network name
+# location_name - location name/description
+# city - city name where station is located
+# county - county name where station is located
+# state - state where station is located (e.g., NC)
+# latitude_degrees_north - latitude in decimal degrees north
+# longitude_degrees_east - longitude in decimal degrees east
+# elevation_feet - elevation of the station in feet (above sea level)
+# supporting_agency_for_location - agency name that supports the station
+# start_date - first day included in station record
+# end_date - last day included in station record
 
 
 # ---- to do ----
 
-# TODO deal with column type parsing issue for import of NOS data (score is numeric but sometimes character...)
-# TODO regenerate api key (hash) code for api
-# TODO fill out metadata column description in notes
+# TODO regenerate api key (hash) code for api (not sure what this means now...?)
 # TODO make tests in case data isn't available and nothing to append or too much to append
 # TODO use here package for paths - hard coding them for now
 # TODO check difference bewteen precip1m and precip variables
@@ -104,7 +115,6 @@ my_ncsco_networks = c("ASOS", "AWOS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW"
 # CMAN there's no data coming up
 # CoCoRaHS data get directly from their website (for free)
 # NCSU gives 504 error for data beyond May 1, 2015
-# NOS is having issues with metadata commas (see email to john)
 
 for (n in 1:length(my_ncsco_networks)) {
   # pick network
@@ -114,15 +124,17 @@ for (n in 1:length(my_ncsco_networks)) {
   data_list <- get_ncsco_api_data(ncsco_network = temp_ncsco_network, 
                                   ncsco_var = "precip1m", # accumulated precipitation at 1 m above Earth's surface
                                   start_date = "20150101", 
-                                  end_date = "20161231", 
+                                  end_date = "20150331", 
                                   api_key = NCSOC_API_KEY)
   
   # define data
   data_raw <- data_list$data_raw
+  # NOTE: All colunms are in the character format!
   
   # define metadata and keep replicates
   metadata_raw <- data_list$metadata_raw %>%
     distinct() # keep unique values
+  # NOTE: All colunms are in the character format!
   
   # only export if there's data
   if (dim(data_raw)[1] > 0) {
