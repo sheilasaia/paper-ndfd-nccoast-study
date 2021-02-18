@@ -75,8 +75,11 @@ read_ncsco_api_metadata <- function(query_raw_text) {
     # separate(col = metadata_repl_header_fix, sep = ",", remove = FALSE)
   
   # add tidy header and read in as csv
-  metadata_tidy <- read_csv(c(metadata_repl_header, metadata_data_no_header_checked), col_names = TRUE) %>%
+  metadata_tidy <- read_csv(c(metadata_repl_header, metadata_data_no_header_checked), 
+                            col_names = TRUE, 
+                            col_types = cols(.default = col_character())) %>%
     distinct_all() # delete replicates
+  # NOTE: All colunms are in the character format!
   
   return(metadata_tidy) 
 }

@@ -10,6 +10,36 @@
 # ---- notes ----
 # notes:
  
+# data column descriptions
+# location_id - originally called "location" in API output, renamed to match similar metadata column (as db key), location of data
+# location_id_code - location of data (replicate of location_id?)
+# datetime_et - originally called "datetime" in API output, datetime of observation (timezone?), default is US/Eastern
+# var - requested variable
+# value - value of variable, if no value (MV = Missing Value, NA = Not Applicable)
+# unit - unit of value
+# score - quality Control score of value (0 = Good, 1 = Likely Good, 2 = Likely Bad, 3 = Bad, -1 = Pending, NA = Not Available)
+# nettype - network type code (M = Measured, C = Calculated, S = Station, L = Location)
+# vartype - variable type code (A = Aggregate of Multiple Values, M = Metadata, I = Single Value, S = Subset of Multiple Values)
+# obtime - observation time (timezone?), default is US/Eastern
+# obtype - observation type Code (D = Daily, H = Hourly, O = Minute, S = Special)
+# obnum - number of observations used for value
+# value_accum - accumulated value of numeric variable (grouped by location and month)
+
+# metadata column description
+# location_id - originally called "location" in API output, renamed to match similar metadata column (as db key), location of data
+# location_id_code - location of data (replicate of location_id?)
+# network_type - network name
+# location_name - location name/description
+# city - city name where station is located
+# county - county name where station is located
+# state - state where station is located (e.g., NC)
+# latitude_degrees_north - latitude in decimal degrees north
+# longitude_degrees_east - longitude in decimal degrees east
+# elevation_feet - elevation of the station in feet (above sea level)
+# supporting_agency_for_location - agency name that supports the station
+# start_date - first day included in station record
+# end_date - last day included in station record
+
 
 # ---- to do ----
 # to do list
@@ -24,7 +54,7 @@
 #' @param start_date A YYYY-MM-DD string representing the start date of the data request (e.g., "2020-01-01")
 #' @param end_date A YYYY-MM-DD string representing the end date of the data request, must be later than start_date (e.g., "2020-09-08")
 #' @param api_key A string describing the NC SCO API key
-#' @return A list with two dataframes (data and metadata) for the specified network and date range.
+#' @return A list with two tibbles (data and metadata) for the specified network and date range. NOTE: All colunms are in the character format!
 #' 
 #' Requires read_sco_api_metadata.R function
 get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, api_key) {
@@ -63,32 +93,33 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
   # else no appending
   
   # create empty df's for data and metadata
-  data_raw <- data.frame(location_id = character(),
-                         datetime_chr_et = character(),
-                         var = character(),
-                         value = numeric(),
-                         unit = character(),
-                         score = numeric(),
-                         nettype = character(),
-                         vartype = character(),
-                         obtime = character(),
-                         obtype = character(),
-                         obnum = numeric(),
-                         value_accum = numeric())
+  data_raw <- tibble(location_id = character(),
+                     datetime_et = character(),
+                     var = character(),
+                     value = character(),
+                     unit = character(),
+                     score = character(),
+                     nettype = character(),
+                     vartype = character(),
+                     obtime = character(),
+                     obtype = character(),
+                     obnum = character(),
+                     value_accum = character())
   
-  metadata_raw <- data.frame(location_id = character(),
-                             network_type = character(),
-                             location_name = character(),
-                             city = character(),
-                             county = character(),
-                             state = character(),
-                             latitude_degrees_north = numeric(),
-                             longitude_degrees_east = numeric(),
-                             elevation_feet_chr = character(),
-                             supporting_agency_for_location = character(),
-                             start_date_chr = character(),
-                             end_date_chr = character(),
-                             obtypes_available = character())
+  metadata_raw <- tibble(location_id = character(),
+                         location_id_code = character(), # not really sure what this is...looks the same as location_id
+                         network_type = character(),
+                         location_name = character(),
+                         city = character(),
+                         county = character(),
+                         state = character(),
+                         latitude_degrees_north = character(),
+                         longitude_degrees_east = character(),
+                         elevation_feet = character(),
+                         supporting_agency_for_location = character(),
+                         start_date = character(),
+                         end_date = character(),
+                         obtypes_available = character())
   
   for (j in 1:num_steps) {
     # define date range
@@ -117,13 +148,13 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     print("query started")
     
     # query
-    temp_data_raw <- httr::GET(query_url_fix)
+    temp_data_query_raw <- httr::GET(query_url_fix)
 
     # print status
     print("query finished")
     
     # check status
-    temp_data_raw_status <- temp_data_raw$status
+    temp_data_raw_status <- temp_data_query_raw$status
     # 200 = good
     # 504 = too big of a request or server timed out
     # 400 = query doesn't exist
@@ -131,53 +162,51 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     # only tidy data if status code is anything but 200
     if (temp_data_raw_status == 200) {
       # save text contents
-      temp_data_text_raw <- httr::content(temp_data_raw, "text")
+      temp_data_text_raw <- httr::content(temp_data_query_raw, "text")
       
       # check if there's data
-      # temp_data_check <- read_csv(temp_data_text_raw, comment = "##", col_types = cols())
-      temp_data_check <- read_csv(temp_data_text_raw, comment = "##", col_types = list(col_character(), col_character(), col_character(), col_number(), col_character(), col_number(), col_character(), col_character(), col_character(), col_character(), col_number(), col_number()))
-            
+      temp_data_check <- read_csv(temp_data_text_raw, comment = "##", col_types = cols(.default = col_character()))
+      # NOTE: All colunms are in the character format!
+      
       # if there's data then run
       if (dim(temp_data_check)[1] > 0) {
         
         # grab data from url (without metadata)
         temp_data_raw <- temp_data_check  %>% # this grabs just the data, length(test_data) > 1 then there's data, datetime is ET
-          mutate(datetime_chr_et = as.character(datetime),
-                 location_id = as.character(location)) %>%
-          select(location_id, datetime_chr_et, var:value_accum) # make location id column the same as metadata, use date as character columns for now
+          mutate(datetime_et = datetime,
+                 location_id = location) %>%
+          select(location_id, datetime_et, var:value_accum) # make location id column the same as metadata, use date as character columns for now
         
         # use function
-        temp_metadata_raw <- read_ncsco_api_metadata(temp_data_text_raw) %>%
-          mutate(start_date_chr = as.character(start_date),
-                 end_date_chr = as.character(end_date),
-                 elevation_feet_chr = as.character(elevation_feet),
-                 location_id = as.character(location_id)) %>%
-          select(location_id:longitude_degrees_east, elevation_feet_chr, supporting_agency_for_location, start_date_chr, end_date_chr, obtypes_available) 
-        
-        # need check to stop if column names aren't the same
+        temp_metadata_raw <- read_ncsco_api_metadata(temp_data_text_raw)
+
+        # need check to stop if data column names aren't the same
         temp_data_cols <- names(temp_data_raw)
         data_cols <- names(data_raw)
-        cols_check <- identical(temp_data_cols, data_cols) # must be TRUE
+        data_cols_check <- identical(temp_data_cols, data_cols) # must be TRUE
+        
+        # need to check to stop if metadata columns names aren't the same
+        temp_metadata_cols <- names(temp_metadata_raw)
+        metadata_cols <- names(metadata_raw)
+        metadata_cols_check <- identical(temp_metadata_cols, metadata_cols) # must be TRUE
         
         # append if columns are the same
-        if (cols_check == TRUE) {
+        if ((data_cols_check == TRUE) & (metadata_cols_check == TRUE)) {
           # append data
           data_raw <- bind_rows(temp_data_raw, data_raw)
           metadata_raw <- bind_rows(temp_metadata_raw, metadata_raw)
           
           # print entry status
           print(paste0("appended step ", j, " of ", num_steps, " steps"))
-          
         }
         
         # print issue if not the same
         else {
-          print(paste0("cannot append step ", j, " of ", num_steps, "steps because columns don't match expected"))
+          print(paste0("cannot append step ", j, " of ", num_steps, "steps because data and/or metadata columns don't match expected"))
         
           # move to next iterator
           next
         }
-        
       }
       
       else {
