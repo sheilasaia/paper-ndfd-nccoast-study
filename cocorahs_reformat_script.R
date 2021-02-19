@@ -14,8 +14,8 @@ tabular_data_output_path <- "/Users/sheila/Documents/bae_shellcast_project/shell
 
 # ---- 3. read in data ----
 # cocorahs data
-cocorahs_data_raw <- read_csv(paste0(tabular_data_raw_path, "cocorahs_data_raw.csv"))
-
+cocorahs_data_raw <- read_csv(paste0(tabular_data_raw_path, "cocorahs_data_raw.csv"), col_types = cols(.default = col_character()))
+# NOTE: All columns are in the character format!
 
 # ---- 4. separate out metadata ----
 cocorahs_metadata <- cocorahs_data_raw %>%
@@ -27,17 +27,17 @@ cocorahs_metadata <- cocorahs_data_raw %>%
          city = NA, 
          county = NA, 
          state = NA, 
-         elevation_ft_chr = NA, 
+         elevation_feet = NA, 
          supporting_agency_for_location = "CoCoRaHS",
-         start_date_chr = NA,
-         end_date_chr = NA,
+         start_date = NA,
+         end_date = NA,
          obtypes_available = NA) %>%
-  select(location_id, network_type, location_name,city:state, latitude_degrees_north, longitude_degrees_east, elevation_ft_chr:obtypes_available)
+  select(location_id, network_type, location_name,city:state, latitude_degrees_north, longitude_degrees_east, elevation_feet:obtypes_available)
 
 
 # ---- 5. separate out data ----
 cocorahs_data <- cocorahs_data_raw %>%
-  select(location_id = station_id, datetime_chr_et = datetime_est, precip_in) %>%
+  select(location_id = station_id, datetime_et = datetime_est, precip_in) %>%
   # add columns so this is compatible with NC SCO API outputs
   mutate(var = "precip",
          value = precip_in,
@@ -49,9 +49,8 @@ cocorahs_data <- cocorahs_data_raw %>%
          obtype = NA,
          obnum = NA,
          value_accum = NA) %>%
-  select(location_id, datetime_chr_et, var:value_accum)
+  select(location_id, datetime_et, var:value_accum)
   
-
 
 # ---- 6. export data ----
 write_csv(x = cocorahs_data, path = paste0(tabular_data_output_path, "cocorahs_data.csv"))
