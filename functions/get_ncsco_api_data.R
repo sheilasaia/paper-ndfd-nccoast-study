@@ -128,18 +128,19 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     
     # define url parts that stay the same
     base_url <- "https://api.climate.ncsu.edu/data.php?"
-    url_var <- paste0("var=", ncsco_var, "&")
     url_loc <- paste0("loc=type=", ncsco_network, "&")
+    url_var <- paste0("var=", ncsco_var, "&")
     url_state <- "state=NC&"
-    url_int <- "int=1 day&" # data interval (1 day = daily)
     url_start_date <- paste0("start=", temp_start_date_sel, "&")
     url_end_date <- paste0("end=", temp_end_date_sel, "&")
+    url_int <- "int=1 day&" # data interval (1 day = daily)
     url_output <- "output=csv&" # csv output
+    url_attrib <- "attr=location,datetime,var,value,unit,score,nettype,vartype,obtime,obtype,obnum,value_accum&" # have to be in this order
     url_key <- paste0("hash=", api_key)
     # additional api arguments are here: https://api.climate.ncsu.edu/help
     
     # put all together to get query url
-    query_url <- paste0(base_url, url_var, url_loc, url_state, url_int, url_start_date, url_end_date, url_output, url_key)
+    query_url <- paste0(base_url, url_loc, url_state, url_var, url_start_date, url_end_date, url_int, url_output, url_attrib, url_key)
 
     # replace spaces in query url with %20 otherwise will get api error
     query_url_fix <- URLencode(query_url) # need to replace " " with "%20"
@@ -166,7 +167,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
       
       # check if there's data
       temp_data_check <- read_csv(temp_data_text_raw, comment = "##", col_types = cols(.default = col_character()))
-      # NOTE: All colunms are in the character format!
+      # NOTE: All columns are in the character format!
       
       # if there's data then run
       if (dim(temp_data_check)[1] > 0) {
@@ -202,7 +203,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
         
         # print issue if not the same
         else {
-          print(paste0("cannot append step ", j, " of ", num_steps, "steps because data and/or metadata columns don't match expected"))
+          print(paste0("cannot append step ", j, " of ", num_steps, " steps because data and/or metadata columns don't match expected"))
         
           # move to next iterator
           next
