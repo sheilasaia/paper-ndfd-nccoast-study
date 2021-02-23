@@ -114,7 +114,6 @@ my_ncsco_networks = c("ASOS", "AWOS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW"
 # BUOY there's no data coming up
 # CMAN there's no data coming up
 # CoCoRaHS data get directly from their website (for free)
-# NCSU gives 504 error for data beyond May 1, 2015
 
 for (n in 1:length(my_ncsco_networks)) {
   # pick network
@@ -124,17 +123,17 @@ for (n in 1:length(my_ncsco_networks)) {
   data_list <- get_ncsco_api_data(ncsco_network = temp_ncsco_network, 
                                   ncsco_var = "precip1m", # accumulated precipitation at 1 m above Earth's surface
                                   start_date = "20150101", 
-                                  end_date = "20150331", 
+                                  end_date = "20161231", 
                                   api_key = NCSOC_API_KEY)
   
   # define data
   data_raw <- data_list$data_raw
-  # NOTE: All colunms are in the character format!
+  # NOTE: All columns are in the character format!
   
   # define metadata and keep replicates
   metadata_raw <- data_list$metadata_raw %>%
     distinct() # keep unique values
-  # NOTE: All colunms are in the character format!
+  # NOTE: All columns are in the character format!
   
   # only export if there's data
   if (dim(data_raw)[1] > 0) {
