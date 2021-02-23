@@ -33,19 +33,19 @@ tabular_data_export_path <- "/Users/sheila/Documents/bae_shellcast_project/shell
 # start_date <- ymd("2016-01-01")
 # end_date <- ymd("2018-12-31")
 start_date <- ymd("2015-01-01")
+# end_date <- ymd("2015-01-07") # testing
 end_date <- ymd("2016-12-31")
 day_step <- duration(num = 1, units = "days")
 num_days <- time_length(end_date - start_date, unit = "days")
 
 # make empty data frame/tibble
-cocorahs_data <- tibble(date = character(),
-                        time = character(),
-                        date_time_est = character(),
-                        station_id = character(),
-                        station_name = character(),
-                        lat = numeric(),
-                        long = numeric(),
-                        precip_in = numeric())
+cocorahs_data_raw <- tibble(date = character(),
+                            time = character(),
+                            station_id = character(),
+                            station_name = character(),
+                            lat = numeric(),
+                            long = numeric(),
+                            precip_in = numeric())
 # map(cocorahs_data, class) # checks classes of columns
 
 # loop
@@ -60,8 +60,8 @@ for (i in 0:num_days) {
   temp_address <- paste0("http://data.cocorahs.org/export/exportreports.aspx?ReportType=Daily&dtf=1&Format=XML&State=NC&ReportDateType=reportdate&Date=", temp_month, "/", temp_day, "/", temp_year, "&TimesInGMT=False")
   
   # download and read xml data from address
-  temp_data <- xml2::download_xml(url = temp_address)
-  temp_xml <- read_xml(temp_data)
+  temp_data_xml_chr <- xml2::download_xml(url = temp_address)
+  temp_xml <- read_xml(temp_data_xml_chr)
   
   # save data to lists
   # xml_child(xml_child((test_xml))) # see all report entries for one station
@@ -75,30 +75,41 @@ for (i in 0:num_days) {
   precip_list <- xml_text(xml_find_all(xml_children(xml_children((temp_xml)))[1], "//TotalPrecipAmt")) # in inches (T = trace, NA = NA)
   
   # make dataframe/tibble
-  temp_data <- tibble(date = obs_date_list,
-                      time = as.character(obs_time_list),
-                      station_id = station_numbers_list,
-                      station_name = station_name_list,
-                      lat = as.numeric(lat_list),
-                      long = as.numeric(long_list),
-                      precip_in = as.numeric(precip_list)) %>% # as.numeric() will convert NAs and Ts all to NAs
-    na.omit() %>% # delete NA entries
-    mutate(datetime_est = as.character(ymd_hm(paste0(date, " ", time), tz = "EST"))) %>%
-    select(date, time, datetime_est, station_id:precip_in)
+  temp_data_raw <- tibble(date = obs_date_list,
+                          time = as.character(obs_time_list),
+                          station_id = station_numbers_list,
+                          station_name = station_name_list,
+                          lat = as.numeric(lat_list),
+                          long = as.numeric(long_list),
+                          precip_in = as.numeric(precip_list))
   # NA warning is ok here this happens from using as.numeric
-  # map(temp_data, class) # checks classes of columns
+  # map(temp_data_raw, class) # checks classes of columns
   
   # bind to tibble
-  cocorahs_data <- bind_rows(temp_data, cocorahs_data)
+  cocorahs_data_raw <- bind_rows(temp_data_raw, cocorahs_data_raw)
   
   # print date
   print(temp_date)
 }
 
+# final clean up
+cocorahs_data_raw_fin <- cocorahs_data_raw %>%
+  mutate(time_og = hm(str_sub(time, start = 1, end = 5)),
+         time_lab = str_sub(time, start = 7, end = -1), # need to deal with "AM" and "PM"
+         time_fix = case_when((time_lab == "AM") & (time_og < hours(12)) ~ time_og,
+                              (time_lab == "AM") & (time_og >= hours(12)) ~ (time_og - hours(12)),
+                              (time_lab == "PM") & (time_og < hours(12)) ~ (time_og + hours(12)),
+                              (time_lab == "PM") & (time_og >= hours(12)) ~ time_og),
+         time_fix_fin = sprintf('%02d:%02d:%02d', hour(time_fix), minute(time_fix), second(time_fix))) %>% # make "AM" and "PM" military time
+  mutate(datetime_et = as.character(ymd_hms(paste0(date, " ", time_fix_fin), tz = "EST"))) %>%
+  na.omit() %>% # delete NA entries
+  select(date, time, datetime_et, station_id:precip_in) %>%
+  arrange(datetime_et)
+
 
 # ---- 3. export data ----
 # export to csv
-write_csv(x = cocorahs_data %>% arrange(datetime_est), path = paste0(tabular_data_export_path, "cocorahs_data_raw.csv"))
+write_csv(x = cocorahs_data_raw_fin, path = paste0(tabular_data_export_path, "cocorahs_data_raw.csv"))
 
 
 
