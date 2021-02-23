@@ -2,6 +2,7 @@
 
 # ---- 1. load libraries ----
 library(tidyverse)
+library(lubridate)
 
 
 # ---- 2. define paths ----
@@ -20,7 +21,7 @@ cocorahs_data_raw <- read_csv(paste0(tabular_data_raw_path, "cocorahs_data_raw.c
 # ---- 4. separate out metadata ----
 cocorahs_metadata <- cocorahs_data_raw %>%
   # change column names so they are compatible with NC SCO API outputs
-  select(location_id = station_id, location_name = station_name, latitude_degrees_north = lat, longitude_degrees_east = long) %>%
+  select(location_id = station_id, location_id_code = station_id, location_name = station_name, latitude_degrees_north = lat, longitude_degrees_east = long) %>%
   distinct_all() %>%
   # add columns so this is compatible with NC SCO API outputs
   mutate(network_type = "CoCoRaHS",
@@ -32,12 +33,12 @@ cocorahs_metadata <- cocorahs_data_raw %>%
          start_date = NA,
          end_date = NA,
          obtypes_available = NA) %>%
-  select(location_id, network_type, location_name,city:state, latitude_degrees_north, longitude_degrees_east, elevation_feet:obtypes_available)
+  select(location_id, location_id_code, network_type, location_name,city:state, latitude_degrees_north, longitude_degrees_east, elevation_feet:obtypes_available)
 
 
 # ---- 5. separate out data ----
 cocorahs_data <- cocorahs_data_raw %>%
-  select(location_id = station_id, datetime_et = datetime_est, precip_in) %>%
+  select(location_id = station_id, datetime_et, precip_in) %>%
   # add columns so this is compatible with NC SCO API outputs
   mutate(var = "precip",
          value = precip_in,
