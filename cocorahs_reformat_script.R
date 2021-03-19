@@ -3,6 +3,7 @@
 # ---- 1. load libraries ----
 library(tidyverse)
 library(lubridate)
+library(tidylog)
 
 
 # ---- 2. define paths ----
@@ -27,7 +28,7 @@ cocorahs_metadata <- cocorahs_data_raw %>%
   mutate(network_type = "CoCoRaHS",
          city = NA, 
          county = NA, 
-         state = NA, 
+         state = "NC", 
          elevation_feet = NA, 
          supporting_agency_for_location = "CoCoRaHS",
          start_date = NA,
