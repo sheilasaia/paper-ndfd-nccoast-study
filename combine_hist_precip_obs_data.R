@@ -133,12 +133,12 @@ hist_precip_data_compiled <- rbind(cocorahs_data_raw,
                                    nos_data_raw,
                                    rawsmw_data_raw,
                                    threadex_data_raw) %>%
-  mutate(datetime_et_ymd = ymd(str_sub(datetime_et, start = 1, end = 10)),
-         precip_in = as.numeric(value),
-         precip_month_acc_in = as.numeric(value_accum)) %>%
-  select(location_id, datetime_et_ymd, precip_in, precip_month_acc_in) %>%
-  arrange(location_id, datetime_et_ymd) %>%
-  na.omit()
+  mutate(date_et = ymd(str_sub(datetime_et, start = 1, end = 10)),
+         precip_in = as.numeric(value)) %>% #,
+         #precip_month_acc_in = as.numeric(value_accum)) %>%
+  select(loc_id = location_id, date_et, precip_in) %>% # , precip_month_acc_in) %>%
+  arrange(loc_id, date_et) # %>%
+  # na.omit()
 
 #compile and tidy up metadata
 hist_precip_metadata_compiled <- rbind(cocorahs_metadata_raw,
@@ -150,13 +150,17 @@ hist_precip_metadata_compiled <- rbind(cocorahs_metadata_raw,
                                        nos_metadata_raw,
                                        rawsmw_metadata_raw,
                                        threadex_metadata_raw) %>%
-  mutate(long_deg_e = as.numeric(longitude_degrees_east),
-         lat_deg_n = as.numeric(latitude_degrees_north),
-         elevation_ft = as.numeric(elevation_feet),
-         start_date_ymd = ymd(start_date),
-         end_date_ymd = ymd(end_date)) %>%
-  select(location_id, long_deg_e, lat_deg_n, network_type:state, elevation_ft, start_date_ymd, end_date_ymd, obtypes_available) %>%
-  arrange(network_type, city)
+  mutate(loc_id = location_id,
+         long = as.numeric(longitude_degrees_east),
+         lat = as.numeric(latitude_degrees_north),
+         network = network_type,
+         cosponsor = supporting_agency_for_location,
+         elev_ft = as.numeric(elevation_feet),
+         start_date = ymd(start_date),
+         end_date = ymd(end_date),
+         obs_types = obtypes_available) %>%
+  select(loc_id, long, lat, network, city, county, state, elev_ft, start_date, end_date, cosponsor, obs_types) %>%
+  arrange(network, city)
 
 
 # ---- 6. export data ----
