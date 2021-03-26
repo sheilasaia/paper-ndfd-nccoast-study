@@ -133,12 +133,14 @@ hist_precip_data_compiled <- rbind(cocorahs_data_raw,
                                    nos_data_raw,
                                    rawsmw_data_raw,
                                    threadex_data_raw) %>%
-  mutate(date_et = ymd(str_sub(datetime_et, start = 1, end = 10)),
-         precip_in = as.numeric(value)) %>% #,
+  mutate(date = ymd(str_sub(datetime_et, start = 1, end = 10)),
+         precip_in = as.numeric(value),
+         loc_id = as.character(location_id)) %>% #,
          #precip_month_acc_in = as.numeric(value_accum)) %>%
-  select(loc_id = location_id, date_et, precip_in) %>% # , precip_month_acc_in) %>%
-  arrange(loc_id, date_et) # %>%
+  select(loc_id, date, precip_in) %>% # , precip_month_acc_in) %>%
+  arrange(loc_id, date) # %>%
   # na.omit()
+# Input `precip_in` is `as.numeric(value)`. error because there are some characters in the value column - these will become NA's which is fine
 
 #compile and tidy up metadata
 hist_precip_metadata_compiled <- rbind(cocorahs_metadata_raw,
@@ -150,7 +152,7 @@ hist_precip_metadata_compiled <- rbind(cocorahs_metadata_raw,
                                        nos_metadata_raw,
                                        rawsmw_metadata_raw,
                                        threadex_metadata_raw) %>%
-  mutate(loc_id = location_id,
+  mutate(loc_id = as.character(location_id),
          long = as.numeric(longitude_degrees_east),
          lat = as.numeric(latitude_degrees_north),
          network = network_type,
@@ -161,7 +163,7 @@ hist_precip_metadata_compiled <- rbind(cocorahs_metadata_raw,
          obs_types = obtypes_available) %>%
   select(loc_id, long, lat, network, city, county, state, elev_ft, start_date, end_date, cosponsor, obs_types) %>%
   arrange(network, city)
-
+# Input `elev_ft` is `as.numeric(elevation_feet)`. error because there are some characters in the elevation_feet column - these will become NA's which is fine
 
 # ---- 6. export data ----
 write_csv(x = hist_precip_data_compiled, path = paste0(tabular_compiled_output_data_path, "hist_precip_data_compiled.csv"))
