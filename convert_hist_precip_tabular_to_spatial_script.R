@@ -53,6 +53,7 @@ hist_precip_metadata <- read_csv(paste0(tabular_data_input_path, "hist_precip_me
 # ---- check how complete ----
 # check how complete each station record is
 hist_precip_data_completeness <- hist_precip_data %>%
+  na.omit() %>% # if you don't add this NA cell will be counted in n()
   group_by(loc_id) %>%
   summarize(count = n(),
             perc_compl = round((count/731) * 100, digits = 3)) %>%
@@ -62,7 +63,8 @@ hist_precip_data_completeness <- hist_precip_data %>%
 
 # join completeness with metadata
 hist_precip_metadata_complete <- hist_precip_metadata %>%
-  left_join(hist_precip_data_completeness, by = "loc_id")
+  left_join(hist_precip_data_completeness, by = "loc_id") %>%
+  mutate(perc_compl = if_else(is.na(perc_compl), 0, perc_compl))
 
 # ---- make tabular data spatial ----
 # convert to spatial data
