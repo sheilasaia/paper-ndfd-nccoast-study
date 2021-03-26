@@ -134,8 +134,6 @@ ndfd_pts_calcs_data <- data.frame(loc_id = as.character(),
 # record start time
 start_time <- now()
 
-
-
 # read in data that's available
 for (i in 182:365) { #dim(data_available)[1]) {
   status <- data_available$status[i]
