@@ -23,6 +23,8 @@
 # ---- to do ----
 # to do list
 
+# TODO move roc ndfd calcs to separate script! do just import ndfd_data_sel.csv here
+# reloop through roc ndfd calcs b/c fewer leases now due to issue with counting NAs in previous script
 
 # ---- 1. load libraries ----
 library(tidyverse)
@@ -30,6 +32,7 @@ library(sf)
 library(here)
 library(tidylog)
 library(lubridate)
+library(pROC)
 
 
 # ---- 2. define paths ----
@@ -53,6 +56,10 @@ lease_centroids_albers <- st_read(paste0(data_path, "spatial/sheila_generated/le
 # import historic precip metadata (spatial)
 hist_precip_metadata_albers <- st_read(paste0(data_path, "spatial/sheila_generated/hist_precip_data/hist_precip_metadata_albers.shp"))
 
+# import historic precip data (tabular)
+hist_precip_data <- read_csv(file = paste0(data_path, "tabular/sheila_generated/hist_precip_data/hist_precip_data_compiled.csv"), col_names = TRUE,
+                             col_types = list(col_character(), col_date(), col_number()))
+
 # cmu information (tabular)
 cmu_sga_key <- read_csv(file = paste0(data_path, "tabular/sheila_generated/ncdmf_rainfall_thresholds/cmu_sga_key.csv"), col_names = TRUE)
 
@@ -64,6 +71,9 @@ rainfall_thresh_data_raw <- read_csv(file = paste0(data_path, "tabular/sheila_ge
 
 # ndfd data available
 data_available <- read_csv(paste0(ndfd_sco_tabular_data_input_path, "data_available.csv"), col_names = TRUE)
+
+# ndfd selected data
+ndfd_data_sel <- read_csv(paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel.csv"), col_names = TRUE)
 
 
 # ---- 4. find cmu's with the most leases ----
@@ -158,9 +168,9 @@ valid_period_list <- c(24, 48, 72)
 num_obs <- dim(hist_precip_metadata_sel)[1]
 
 # make empty data frame
-ndfd_sel_data <- data.frame(loc_id = as.character(),
+ndfd_data_sel <- data.frame(loc_id = as.character(),
                             cmu_name = as.character(),
-                            datetime_uct = as.character(),
+                            date = as.character(),
                             valid_period_hrs = as.numeric(),
                             loc_qpf_in = as.numeric(),
                             cmu_qpf_in = as.numeric())
@@ -243,15 +253,15 @@ for (i in 288:dim(data_available)[1]) {
         temp_cmu_qpf_result <- round(sum(temp_qpf_area_weighted_df$area_weighted_avg), 4)
         
         # save data
-        temp_ndfd_sel_data <- data.frame(loc_id = temp_loc_id,
+        temp_ndfd_data_sel <- data.frame(loc_id = temp_loc_id,
                                          cmu_name = temp_cmu_name,
-                                         datetime_uct = temp_date,
+                                         date = temp_date,
                                          valid_period_hrs = temp_valid_period,
                                          loc_qpf_in = temp_loc_qpf_result,
                                          cmu_qpf_in = temp_cmu_qpf_result)
         
         # bind results
-        ndfd_sel_data <-  rbind(ndfd_sel_data, temp_ndfd_sel_data)
+        ndfd_data_sel <-  rbind(ndfd_data_sel, temp_ndfd_data_sel)
         
         # print when finished with point
         # print(paste0("finished row: ", k))
@@ -281,17 +291,65 @@ stop_time - start_time
 
 
 # ---- 7. roc curve analysis ----
+# plot loc qpf vs cmu qpf (do ROC for both?)
+ggplot(data = ndfd_data_sel) +
+  geom_point(aes(x = loc_qpf_in, y = cmu_qpf_in, color = month(date, label = TRUE)), alpha = 0.75, size = 3) +
+  labs(x = "QPF value of observation gridcell (in)", y = "Weighted area avg QPF of CMU assoc. w/ observation (in)", color = "Month") +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  theme_classic()
+# very similar 
 
-# need to turn qpf to 0 (no closure) or 1 (closure) based on CMU treshold
-# need to bind observations
-# use pROC as described here https://cran.r-project.org/web/packages/pROC/pROC.pdf
+# select metadata columns to join
+loc_metadata_to_join <- hist_precip_metadata_sel %>%
+  st_drop_geometry() %>%
+  dplyr::select(loc_id, cmu_name, rain_in)
 
-# from Emine
-# library(pROC)
-# my_roc <- roc(all_df$flooding, all_df$ndwi)  # flooding is binary and ndwi is continuous
-# plot(my_roc, print.thres="best", print.thres.best.method="youden")
-# plot(my_roc, print.thres="best", print.thres.best.method="closest.topleft")
-# coords(my_roc, "best", ret="threshold", best.method="closest.topleft")  # this gives the threshold value 
+# join to ndfd data
+ndfd_data_sel_join <- ndfd_data_sel %>%
+  # filter(loc_id %in% c(as.character(unique(hist_precip_metadata_sel$loc_id)))) %>% # don't need this once rerun ndfd_data_sel
+  dplyr::left_join(loc_metadata_to_join, by = c("loc_id", "cmu_name"))
+
+# turn qpf to 0 (control: no closure) or 1 (case: closure) based on CMU treshhold
+ndfd_data_binary <- ndfd_data_sel_join %>%
+  dplyr::mutate(loc_qpf_binary = if_else(loc_qpf_in >= rain_in, 1, 0),
+                cmu_qpf_binary = if_else(cmu_qpf_in >= rain_in, 1, 0))
+
+# select observations to join
+loc_data_to_join <- hist_precip_data %>%
+  dplyr::mutate(loc_id = as.character(loc_id)) %>%
+  dplyr::select(loc_id, date, precip_in)
+
+# join observations
+roc_data <- ndfd_data_binary %>%
+  dplyr::left_join(loc_data_to_join, by = c("loc_id", "date"))
+
+# 1in 24hr cmu-based
+roc_data_1in <- roc_data %>%
+  dplyr::filter(rain_in == 1.0)
+roc_1in_24hr_cmu <- roc(roc_data_1in$cmu_qpf_binary, roc_data_1in$precip_in)
+roc_1in_24hr_cmu$auc # 0.74
+plot(roc_1in_24hr_cmu, print.thres="best", print.thres.best.method="youden")
+plot(roc_1in_24hr_cmu, print.thres="best", print.thres.best.method="closest.topleft")
+# coords(roc_1in_24hr_cmu, "best", ret="threshold", best.method="closest.topleft")  # this gives the threshold value 
+
+# 1.5in 24hr cmu-based
+roc_data_1.5in <- roc_data %>%
+  dplyr::filter(rain_in == 1.5)
+roc_data_1.5in <- roc(roc_data_1.5in$cmu_qpf_binary, roc_data_1.5in$precip_in)
+roc_data_1.5in$auc # 0.75
+plot(roc_data_1.5in, print.thres="best", print.thres.best.method="youden")
+plot(roc_data_1.5in, print.thres="best", print.thres.best.method="closest.topleft")
+# coords(roc_data_1.5in, "best", ret="threshold", best.method="closest.topleft")  # this gives the threshold value 
+
+# 3in 24hr cmu-based
+roc_data_3in <- roc_data %>%
+  dplyr::filter(rain_in == 3)
+roc_data_3in <- roc(roc_data_3in$cmu_qpf_binary, roc_data_3in$precip_in)
+roc_data_3in$auc # 0.90
+plot(roc_data_3in, print.thres="best", print.thres.best.method="youden")
+plot(roc_data_3in, print.thres="best", print.thres.best.method="closest.topleft")
+# coords(roc_data_1.5in, "best", ret="threshold", best.method="closest.topleft")  # this gives the threshold value 
+
 
 
 # ---- 8. export data ----
@@ -300,7 +358,7 @@ st_write(cmu_bounds_roc_sel, paste0(data_path, "spatial/sheila_generated/cmu_bou
 st_write(cmu_bounds_5kmbuf_roc, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_5kmbuf_roc.shp"), delete_layer = TRUE)
 
 # export ndfd data
-write_csv(ndfd_sel_data, paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_sel_data_to20151014.csv"))
+write_csv(ndfd_data_sel, paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel.csv"))
 
 # data <- st_read("/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/sga_bounds/sga_bounds_class_albers.shp")
 # length(data$grow_area) # 617 total
