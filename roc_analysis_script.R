@@ -1,4 +1,3 @@
-
 # ---- script header ----
 # script name: roc_analysis_script.R
 # purpose of script: reliever operating characteristic (roc) curve analysis for ndfd performance
@@ -14,17 +13,38 @@
 # https://rviews.rstudio.com/2019/01/17/roc-curves/
 # AUC is the probability that a randomly drawn interval with a signal present will 
 # produce a higher X value than a signal interval containing noise alone
+# threshold value is optimal value that maximizes optimization 
+
+# Youden's J statistic
+# cutoff threshold is max Youden J's stat
+# best to use Youden's over closest topleft according to https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-77
+# value of 0 means test us useless because it gives the same proportion of positive results for cases and contorls
+# value of 1 means test has no fp or fn therefore is perfect
+# https://en.wikipedia.org/wiki/Youden%27s_J_statistic
 
 # for pROC package
 # https://rviews.rstudio.com/2019/03/01/some-r-packages-for-roc-curves/
 # https://cran.r-project.org/web/packages/pROC/pROC.pdf
+# https://rdrr.io/cran/pROC/man/coords.html (see for glossary table)
+# https://www.rdocumentation.org/packages/pROC/versions/1.17.0.1
+# examples: https://rpubs.com/Wangzf/pROC
 
+# cutpointr package
+# https://cran.r-project.org/web/packages/cutpointr/vignettes/cutpointr.html
+
+# roc analysis
+# https://acutecaretesting.org/en/articles/roc-curves-what-are-they-and-how-are-they-used
+# https://www.youtube.com/watch?v=4jRBRDbJemM
+# Youden and Closest Top Left https://academic.oup.com/aje/article/163/7/670/77813
+
+
+# auc
+# use this to compare tests, 1 indicates perfect fit and below 0.5 indicates a test failure
+# 0.9 - 1 (very good), 0.8 - 0.9 (good), 0.8 - 0.7 (fair), 0.7 - 0.6 (poor), 0 - 0.6 (fail)
 
 # ---- to do ----
 # to do list
 
-# TODO move roc ndfd calcs to separate script! do just import ndfd_data_sel.csv here
-# reloop through roc ndfd calcs b/c fewer leases now due to issue with counting NAs in previous script
 
 # ---- 1. load libraries ----
 library(tidyverse)
@@ -32,6 +52,7 @@ library(sf)
 library(here)
 library(tidylog)
 library(lubridate)
+library(cutpointr)
 library(pROC)
 
 
@@ -47,260 +68,20 @@ ndfd_sco_spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_proje
 
 
 # ---- 3. load data ----
-# import cmu bounds (spatial)
-cmu_bounds_albers <- st_read(paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_albers.shp"))
+# ndfd selected data
+ndfd_data_sel <- read_csv(paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel.csv"), col_names = TRUE)
 
-# import lease centroids (spatial)
-lease_centroids_albers <- st_read(paste0(data_path, "spatial/sheila_generated/lease_bounds/lease_centroids_albers.shp"))
-
-# import historic precip metadata (spatial)
-hist_precip_metadata_albers <- st_read(paste0(data_path, "spatial/sheila_generated/hist_precip_data/hist_precip_metadata_albers.shp"))
+# precip metadata (that overlaps and is 90% complete)
+hist_precip_metadata_albers_sel <- st_read(paste0(data_path, "spatial/sheila_generated/hist_precip_data/hist_precip_metadata_albers_sel.shp"))
 
 # import historic precip data (tabular)
 hist_precip_data <- read_csv(file = paste0(data_path, "tabular/sheila_generated/hist_precip_data/hist_precip_data_compiled.csv"), col_names = TRUE,
                              col_types = list(col_character(), col_date(), col_number()))
 
-# cmu information (tabular)
-cmu_sga_key <- read_csv(file = paste0(data_path, "tabular/sheila_generated/ncdmf_rainfall_thresholds/cmu_sga_key.csv"), col_names = TRUE)
 
-# sga information (tabular)
-sga_key <- read_csv(file = paste0(data_path, "tabular/sheila_generated/ncdmf_rainfall_thresholds/sga_key.csv"), col_names = TRUE)
-
-# rainfall thresholds (tabular)
-rainfall_thresh_data_raw <- read_csv(file = paste0(data_path, "tabular/sheila_generated/ncdmf_rainfall_thresholds/rainfall_thresholds_raw_tidy.csv"), col_names = TRUE)
-
-# ndfd data available
-data_available <- read_csv(paste0(ndfd_sco_tabular_data_input_path, "data_available.csv"), col_names = TRUE)
-
-# ndfd selected data
-ndfd_data_sel <- read_csv(paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel.csv"), col_names = TRUE)
-
-
-# ---- 4. find cmu's with the most leases ----
-# tidy rainfall threshold data 
-rainfall_thresh_data <- rainfall_thresh_data_raw %>%
-  select(HA_CLASS, cmu_name) %>%
-  left_join(cmu_sga_key, by = "HA_CLASS") %>%
-  left_join(sga_key, by = "grow_area") %>%
-  select(-googlemaps_description, -sga_desc_short)
-
-# summarize number of leases in each cmu
-lease_cmu_count <- lease_centroids_albers %>%
-  st_drop_geometry() %>%
-  group_by(cmu_name) %>%
-  summarize(lease_count = n()) %>%
-  left_join(rainfall_thresh_data, by = "cmu_name")
-
-# join lease counts to cmu data (for plotting)
-cmu_bounds_lease_count_join <- cmu_bounds_albers %>%
-  left_join(lease_cmu_count, by = "cmu_name")
-
-# tabular data
-cmu_bounds_lease_count_join_tabular <- cmu_bounds_lease_count_join %>%
-  st_drop_geometry()
-
-# plot by lease count
-pdf(file = here::here("figures", "cmu_lease_counts.pdf"), width = 10, height = 10)
-ggplot(data = cmu_bounds_lease_count_join) +
-  geom_sf(aes(fill = lease_count)) + 
-  scale_fill_gradient(low = "white", high = "blue", na.value = "grey80") +
-  theme_classic()
-dev.off()
-
-# plot rainfall threshold depth by number of leases
-ggplot(data = cmu_bounds_lease_count_join) +
-  geom_point(aes(x = rain_in, y = lease_count)) +
-  theme_classic()
-
-# leases to pick
-# cmu with 10 leases at 1 in (U092)
-# cmu with 30 leases at 1.5 in (U096)
-# cmu with 34 leases at 1.5 in (U130) - this one has very few observations so decided not to choose it
-# cmu with 23 leases at 3 in (U144)
-
-
-# ---- 5. select cmu's for analysis ----
-# cmu list
-cmu_sel_list <- c("U092", "U096", "U144")
-
-# select cmus
-cmu_bounds_roc_sel <- cmu_bounds_albers %>%
-  filter(cmu_name %in% cmu_sel_list)
-
-# buffer by 5km
-cmu_bounds_5kmbuf_roc <- cmu_bounds_roc_sel %>%
-  st_buffer(dist = 5000) # dist = 5000 means 5km
-
-# plot selected cmu's with buffers
-pdf(file = here::here("figures", "cmu_selection_with_buffer.pdf"), width = 10, height = 10)
-ggplot() +
-  geom_sf(data = cmu_bounds_5kmbuf_roc, color = "blue", alpha = 0.75) +
-  geom_sf(data = cmu_bounds_lease_count_join) + 
-  geom_sf(data = cmu_bounds_roc_sel, fill = "blue") +
-  theme_classic()
-dev.off()
-
-
-# ---- 6. find precip data that overlaps ----
-hist_precip_metadata_sel <- hist_precip_metadata_albers %>%
-  st_intersection(cmu_bounds_5kmbuf_roc) %>%
-  filter(perc_compl >= 90) # filter out ones that are 90% complete or more
-# without the buffer there are no raingages within the cmus
-
-# plot cmus and observations
-pdf(file = here::here("figures", "cmu_selection_with_obs.pdf"), width = 10, height = 10)
-ggplot() +
-  geom_sf(data = cmu_bounds_5kmbuf_roc, color = "blue", alpha = 0.75) +
-  geom_sf(data = cmu_bounds_roc_sel, fill = "blue") +
-  geom_sf(data = hist_precip_metadata_sel, color = "black") +
-  theme_classic()
-dev.off()
-
-
-# ---- 7. loop through ndfd data to get forecast result ----
-# files available
-file_list <- list.files(path = ndfd_sco_spatial_data_input_path)
-
-# valid period list
-valid_period_list <- c(24, 48, 72)
-
-# number of observations
-num_obs <- dim(hist_precip_metadata_sel)[1]
-
-# make empty data frame
-ndfd_data_sel <- data.frame(loc_id = as.character(),
-                            cmu_name = as.character(),
-                            date = as.character(),
-                            valid_period_hrs = as.numeric(),
-                            loc_qpf_in = as.numeric(),
-                            cmu_qpf_in = as.numeric())
-# loc_qpf_in is based on the ndfd grid cell that the gage is in
-# cmu_qpf_in is based on the area weighted avg footprint of the cmu associated with the gage (shellcast)
-
-# record start time
-start_time <- now()
-
-# for loop (i = day with data, j = valid period, k = observation)
-for (i in 288:dim(data_available)[1]) {
-  # check if data is available
-  status <- data_available$status[i]
-  
-  if (status == "available") {
-    # select date of data to pull
-    temp_date <- ymd(data_available$datetime_uct_str[i])
-    
-    # print date status
-    print(paste0("started ", temp_date, " analysis"))
-    
-    # convert date to string
-    temp_date_str <- paste0(str_remove_all(strftime(temp_date, format = "%Y-%m-%d"), "-"), "00")
-    
-    # get files with that date
-    temp_file_pattern <- paste0("*", temp_date_str, ".tif")
-    temp_files <- file_list[grep(pattern = temp_file_pattern, x = file_list)]
-    
-    # save ndfd file names
-    temp_qpf_file_name <- sort(temp_files[grep(pattern = "qpf", x = temp_files)])
-    
-    # step through each period
-    for (j in 1:length(valid_period_list)) {
-      # valid period
-      temp_valid_period <- valid_period_list[j]
-      
-      # find valid period files
-      temp_prd_qpf_file_name <- temp_qpf_file_name[grep(pattern = paste0(as.character(temp_valid_period), "hr"), x = temp_qpf_file_name)]
-      
-      # read in ndfd raster data
-      temp_qpf_raster <- raster::raster(paste0(ndfd_sco_spatial_data_input_path, temp_prd_qpf_file_name))
-      
-      # save raster resolution
-      temp_qpf_raster_res <- raster::res(temp_qpf_raster)
-      
-      # step through each obs (with unique loc_id and cmu_name)
-      for (k in 1:num_obs) {
-        # save location name
-        temp_loc_id <- as.character(hist_precip_metadata_sel$loc_id[k])
-        
-        # save cmu name
-        temp_cmu_name <- as.character(hist_precip_metadata_sel$cmu_name[k])
-        
-        # location-based calcs
-        # get location location
-        temp_loc_coord <- hist_precip_metadata_sel %>%
-          dplyr::filter(loc_id == temp_loc_id) %>%
-          dplyr::select(geometry)
-        
-        # get value of gridcell that overlaps with location
-        temp_loc_qpf_result <- round(raster::extract(temp_qpf_raster, temp_loc_coord, weights = FALSE)[[1]], 4)
-        
-        # cmu-based calcs (like shellcast)
-        # get cmu bounds vector
-        temp_cmu_bounds <- cmu_bounds_roc_sel %>%
-          dplyr::filter(cmu_name == temp_cmu_name) %>%
-          dplyr::select(geometry)
-        
-        # cmu bounds area
-        temp_cmu_area <- as.numeric(st_area(temp_cmu_bounds)) # in m^2
-        
-        # get value and weight of all gridcells that overlap the cmu
-        temp_qpf_cmu_raster_perc_cover_df <- data.frame(raster::extract(temp_qpf_raster, temp_cmu_bounds, weights = TRUE)[[1]])
-        
-        # calculate area weighted avg value for the pts
-        temp_qpf_area_weighted_df <- temp_qpf_cmu_raster_perc_cover_df %>%
-          dplyr::mutate(area_weighted_avg = value * weight)
-        
-        # sum weighted values to get cmu result
-        temp_cmu_qpf_result <- round(sum(temp_qpf_area_weighted_df$area_weighted_avg), 4)
-        
-        # save data
-        temp_ndfd_data_sel <- data.frame(loc_id = temp_loc_id,
-                                         cmu_name = temp_cmu_name,
-                                         date = temp_date,
-                                         valid_period_hrs = temp_valid_period,
-                                         loc_qpf_in = temp_loc_qpf_result,
-                                         cmu_qpf_in = temp_cmu_qpf_result)
-        
-        # bind results
-        ndfd_data_sel <-  rbind(ndfd_data_sel, temp_ndfd_data_sel)
-        
-        # print when finished with point
-        # print(paste0("finished row: ", k))
-      }
-      
-      # print when done with period
-      print(paste0(temp_valid_period, " hr period appended for ", temp_date))
-    }
-    
-    # print when finished with day
-    print(paste0("finished ", temp_date, " analysis"))
-  }
-  
-  # move to next data entry
-  else {
-    next
-  }
-}
-
-# print time now
-stop_time <- now()
-
-# time to run loop
-stop_time - start_time
-# Time difference of X min per day
-# X min x 731 = X min / 60 = X hours
-
-
-# ---- 7. roc curve analysis ----
-# plot loc qpf vs cmu qpf (do ROC for both?)
-ggplot(data = ndfd_data_sel) +
-  geom_point(aes(x = loc_qpf_in, y = cmu_qpf_in, color = month(date, label = TRUE)), alpha = 0.75, size = 3) +
-  labs(x = "QPF value of observation gridcell (in)", y = "Weighted area avg QPF of CMU assoc. w/ observation (in)", color = "Month") +
-  geom_abline(slope = 1, intercept = 0, lty = 2) +
-  theme_classic()
-# very similar 
-
+# ---- 4. roc curve analysis ----
 # select metadata columns to join
-loc_metadata_to_join <- hist_precip_metadata_sel %>%
+loc_metadata_to_join <- hist_precip_metadata_albers_sel %>%
   st_drop_geometry() %>%
   dplyr::select(loc_id, cmu_name, rain_in)
 
@@ -321,58 +102,274 @@ loc_data_to_join <- hist_precip_data %>%
 
 # join observations
 roc_data <- ndfd_data_binary %>%
-  dplyr::left_join(loc_data_to_join, by = c("loc_id", "date"))
-
-# 1in 24hr cmu-based
-roc_data_1in <- roc_data %>%
-  dplyr::filter(rain_in == 1.0)
-roc_1in_24hr_cmu <- roc(roc_data_1in$cmu_qpf_binary, roc_data_1in$precip_in)
-roc_1in_24hr_cmu$auc # 0.74
-plot(roc_1in_24hr_cmu, print.thres="best", print.thres.best.method="youden")
-plot(roc_1in_24hr_cmu, print.thres="best", print.thres.best.method="closest.topleft")
-# coords(roc_1in_24hr_cmu, "best", ret="threshold", best.method="closest.topleft")  # this gives the threshold value 
-
-# 1.5in 24hr cmu-based
-roc_data_1.5in <- roc_data %>%
-  dplyr::filter(rain_in == 1.5)
-roc_data_1.5in <- roc(roc_data_1.5in$cmu_qpf_binary, roc_data_1.5in$precip_in)
-roc_data_1.5in$auc # 0.75
-plot(roc_data_1.5in, print.thres="best", print.thres.best.method="youden")
-plot(roc_data_1.5in, print.thres="best", print.thres.best.method="closest.topleft")
-# coords(roc_data_1.5in, "best", ret="threshold", best.method="closest.topleft")  # this gives the threshold value 
-
-# 3in 24hr cmu-based
-roc_data_3in <- roc_data %>%
-  dplyr::filter(rain_in == 3)
-roc_data_3in <- roc(roc_data_3in$cmu_qpf_binary, roc_data_3in$precip_in)
-roc_data_3in$auc # 0.90
-plot(roc_data_3in, print.thres="best", print.thres.best.method="youden")
-plot(roc_data_3in, print.thres="best", print.thres.best.method="closest.topleft")
-# coords(roc_data_1.5in, "best", ret="threshold", best.method="closest.topleft")  # this gives the threshold value 
+  dplyr::left_join(loc_data_to_join, by = c("loc_id", "date")) %>%
+  dplyr::mutate(precip_binary = if_else(precip_in >= rain_in, 1, 0),
+                month_num = as.numeric(month(date)))
 
 
+# ---- 5. loop through calcs to make an roc analysis table ----
+# make an empty dataframe
+roc_calcs_data <- tibble(cmu_name = as.character(),
+                         rain_in = as.numeric(),
+                         num_obs_stations = as.numeric(),
+                         valid_period_hrs = as.numeric(),
+                         auc = as.numeric(),
+                         youden_j = as.numeric(),
+                         accuracy = as.numeric(),
+                         # cutpoint_j = as.numeric(),
+                         cutpoint_cutpointr = as.numeric(),
+                         err_decimal_perc = as.numeric(),
+                         cutpoint_tpr_sens = as.numeric(),
+                         cutpoint_tnr_spec = as.numeric(),
+                         num_controls = as.numeric(),
+                         num_cases = as.numeric(),
+                         num_total_obs = as.numeric(),
+                         roc_curve_list = list())
 
-# ---- 8. export data ----
-# export spatial data
-st_write(cmu_bounds_roc_sel, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_roc_sel.shp"), delete_layer = TRUE)
-st_write(cmu_bounds_5kmbuf_roc, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_5kmbuf_roc.shp"), delete_layer = TRUE)
+# unique cmu values with their rainfall depths
+cmu_info_unique <- roc_data %>%
+  dplyr::group_by(cmu_name, rain_in) %>%
+  dplyr::summarize(num_obs_stations = length(unique(loc_id))) # %>% na.omit()
 
-# export ndfd data
-write_csv(ndfd_data_sel, paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel.csv"))
+# number of cmus
+num_cmus <- length(cmu_info_unique$cmu_name)
+  
+# number of valid periods
+num_valid_periods <- length(unique(roc_data$valid_period_hrs))
 
-# data <- st_read("/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/sga_bounds/sga_bounds_class_albers.shp")
-# length(data$grow_area) # 617 total
-# unique(data$ga_class)
-# length(data$grow_area[data$ga_class == "cond_approved"]) # 84
-# 84/617 * 100
-# # 13.6
-# length(data$grow_area[data$ga_class == "approved"])/length(data$grow_area) * 100
-# # 10.7
-# length(data$grow_area[data$ga_class == "restricted"])/length(data$grow_area) * 100
-# # 22
-# length(data$grow_area[data$ga_class == "prohibited"])/length(data$grow_area) * 100
-# # 54
-# 54 + 22 + 11 + 13
+# valid period values
+valid_period_list <- unique(roc_data$valid_period_hrs)
+
+# loop
+for (i in 1:num_cmus) { # i = cmu_name
+  # pick cmu
+  temp_cmu <- cmu_info_unique$cmu_name[i]
+  
+  # record rainfall depth
+  temp_cmu_rain_in <- cmu_info_unique$rain_in[i]
+  
+  # number of stations for comparison
+  temp_num_obs_stations = cmu_info_unique$num_obs_stations[i]
+  
+  for (j in 1:num_valid_periods) { # j = valid_period_hr
+    # pick valid period
+    temp_valid_period <- valid_period_list[j]
+    
+    # filter data
+    temp_data <- roc_data %>%
+      dplyr::filter(cmu_name == temp_cmu & valid_period_hrs == temp_valid_period)
+    
+    # roc object
+    # temp_roc <- pROC::roc(temp_data$cmu_qpf_binary, temp_data$precip_in, na.rm = TRUE)
+    # names(temp_roc)
+    # plot(temp_roc, print.thres = "best", print.thres.best.method = "youden")
+    # plot(temp_roc, print.thres = "best", print.thres.best.method = "closest.topleft")
+    # these plots are both the same....???
+    
+    # cutpointr object
+    temp_cp <- cutpointr::cutpointr(data = temp_data, x = precip_in, class = cmu_qpf_binary, 
+                                    direction = ">=", pos_class = 1, neg_class = 0, 
+                                    method = maximize_metric, metric = youden, na.rm = TRUE)
+    # summary(temp_cp)
+    # plot(temp_cp)
+    
+    # auc
+    # temp_auc <- as.numeric(temp_roc$auc)
+    temp_auc <- temp_cp$AUC
+    
+    # youden j stat
+    temp_youden_j <- temp_cp$youden
+    
+    # accuracy (= fraction correctly classified)
+    temp_accuracy = temp_cp$acc
+    
+    # cutpoint ( = threshold that maximizes tpr and minimizes fpr)
+    # temp_cutpoint_j <- as.numeric(pROC::coords(temp_roc, "best", ret = "threshold", best.method = "youden"))
+    temp_cutpoint_cutpointr <- temp_cp$optimal_cutpoint
+    
+    # percent error between depth and cutpoint
+    temp_err_decimal_perc <- abs(temp_cmu_rain_in - temp_cutpoint_cutpointr) / temp_cmu_rain_in
+      
+    # cutpoint tpr
+    # temp_cutpoint_tpr_sens <- as.numeric(pROC::coords(temp_roc, "best", ret = "sensitivity", best.method = "youden"))
+    temp_cutpoint_tpr_sens <- temp_cp$sensitivity
+    
+    # cutpoint tnr
+    # temp_cutpoint_tnr_spec <- as.numeric(pROC::coords(temp_roc, "best", ret = "specificity", best.method = "youden"))
+    temp_cutpoint_tnr_spec <- temp_cp$specificity
+    
+    # number of controls and cases
+    # temp_num_controls <- length(temp_roc$controls)
+    # temp_num_cases <- length(temp_roc$cases)
+    temp_cp_summary <- summary(temp_cp)
+    temp_num_controls <- temp_cp_summary$n_neg
+    temp_num_cases <- temp_cp_summary$n_pos
+    temp_num_obs <- temp_cp_summary$n_obs
+    
+    # roc curve output list
+    temp_roc_curve_list <- temp_cp$roc_curve
+    
+    # fill in data frame
+    temp_roc_calcs_data <- tibble(cmu_name = temp_cmu,
+                                  rain_in = temp_cmu_rain_in,
+                                  num_obs_stations = temp_num_obs_stations,
+                                  valid_period_hrs = temp_valid_period,
+                                  auc = temp_auc,
+                                  youden_j = temp_youden_j,
+                                  accuracy = temp_accuracy,
+                                  # cutpoint_j = temp_cutpoint_j,
+                                  cutpoint_cutpointr = temp_cutpoint_cutpointr,
+                                  err_decimal_perc = temp_err_decimal_perc,
+                                  cutpoint_tpr_sens = temp_cutpoint_tpr_sens,
+                                  cutpoint_tnr_spec = temp_cutpoint_tnr_spec,
+                                  num_controls = temp_num_controls,
+                                  num_cases = temp_num_cases,
+                                  num_total_obs = temp_num_obs,
+                                  roc_curve_list = temp_roc_curve_list)
+    
+    # bind rows
+    roc_calcs_data <-  dplyr::bind_rows(roc_calcs_data, temp_roc_calcs_data)
+  }
+}
+
+
+# ---- 5. loop through calcs to make an roc analysis table by month ----
+# make an empty dataframe
+roc_calcs_by_month_data <- tibble(cmu_name = as.character(),
+                                  rain_in = as.numeric(),
+                                  month_num = as.numeric(),
+                                  num_obs_stations = as.numeric(),
+                                  valid_period_hrs = as.numeric(),
+                                  auc = as.numeric(),
+                                  youden_j = as.numeric(),
+                                  accuracy = as.numeric(),
+                                  # cutpoint_j = as.numeric(),
+                                  cutpoint_cutpointr = as.numeric(),
+                                  err_decimal_perc = as.numeric(),
+                                  cutpoint_tpr_sens = as.numeric(),
+                                  cutpoint_tnr_spec = as.numeric(),
+                                  num_controls = as.numeric(),
+                                  num_cases = as.numeric(),
+                                  num_total_obs = as.numeric(),
+                                  roc_curve_list = list())
+
+# unique cmu values with their rainfall depths
+cmu_info_unique <- roc_data %>%
+  dplyr::group_by(cmu_name, rain_in) %>%
+  dplyr::summarize(num_obs_stations = length(unique(loc_id))) # %>% na.omit()
+
+# number of cmus
+num_cmus <- length(cmu_info_unique$cmu_name)
+
+# number of valid periods
+num_valid_periods <- length(unique(roc_data$valid_period_hrs))
+
+# valid period values
+valid_period_list <- unique(roc_data$valid_period_hrs)
+
+# loop
+for (i in 1:num_cmus) { # i = cmu
+  # record cmu
+  temp_cmu <- cmu_info_unique$cmu_name[i]
+  
+  # record rainfall depth
+  temp_cmu_rain_in <- cmu_info_unique$rain_in[i]
+  
+  # record number of stations for comparison
+  temp_num_obs_stations = cmu_info_unique$num_obs_stations[i]
+  
+  for (j in 1:num_valid_periods) { # j = valid_period_hr
+    # pick valid period
+    temp_valid_period <- valid_period_list[j]
+    
+    # filter data
+    temp_data <- roc_data %>%
+      dplyr::filter((cmu_name == temp_cmu) & (valid_period_hrs == temp_valid_period))
+    
+    # roc object
+    # temp_roc <- pROC::roc(temp_data$cmu_qpf_binary, temp_data$precip_in, na.rm = TRUE)
+    # names(temp_roc)
+    # plot(temp_roc, print.thres = "best", print.thres.best.method = "youden")
+    # plot(temp_roc, print.thres = "best", print.thres.best.method = "closest.topleft")
+    # these plots are both the same....???
+    
+    # cutpointr object
+    # temp_cp <- cutpointr::cutpointr(data = temp_data, x = precip_in, class = cmu_qpf_binary, 
+    #                                 direction = ">=", pos_class = 1, neg_class = 0, 
+    #                                 method = maximize_metric, metric = youden, na.rm = TRUE)
+    
+    # use method = oc_youden_kernal here and add in month_num column?
+    temp_cp <- cutpointr::cutpointr(data = temp_data, x = precip_in, class = cmu_qpf_binary, subgroup = month_num,
+                                    direction = ">=", pos_class = 1, neg_class = 0,
+                                    method = oc_youden_kernel, na.rm = TRUE)
+    # this isn't working....
+    
+    # summary(temp_cp)
+    # plot(temp_cp)
+    
+    # auc
+    # temp_auc <- as.numeric(temp_roc$auc)
+    temp_auc <- temp_cp$AUC
+    
+    # youden j stat
+    temp_youden_j <- temp_cp$youden
+    
+    # accuracy (= fraction correctly classified)
+    temp_accuracy = temp_cp$acc
+    
+    # cutpoint ( = threshold that maximizes tpr and minimizes fpr)
+    # temp_cutpoint_j <- as.numeric(pROC::coords(temp_roc, "best", ret = "threshold", best.method = "youden"))
+    temp_cutpoint_cutpointr <- temp_cp$optimal_cutpoint
+    
+    # percent error between depth and cutpoint
+    temp_err_decimal_perc <- abs(temp_cmu_rain_in - temp_cutpoint_cutpointr) / temp_cmu_rain_in
+    
+    # cutpoint tpr
+    # temp_cutpoint_tpr_sens <- as.numeric(pROC::coords(temp_roc, "best", ret = "sensitivity", best.method = "youden"))
+    temp_cutpoint_tpr_sens <- temp_cp$sensitivity
+    
+    # cutpoint tnr
+    # temp_cutpoint_tnr_spec <- as.numeric(pROC::coords(temp_roc, "best", ret = "specificity", best.method = "youden"))
+    temp_cutpoint_tnr_spec <- temp_cp$specificity
+    
+    # number of controls and cases
+    # temp_num_controls <- length(temp_roc$controls)
+    # temp_num_cases <- length(temp_roc$cases)
+    temp_cp_summary <- summary(temp_cp)
+    temp_num_controls <- temp_cp_summary$n_neg
+    temp_num_cases <- temp_cp_summary$n_pos
+    temp_num_obs <- temp_cp_summary$n_obs
+    
+    # roc curve output list
+    temp_roc_curve_list <- temp_cp$roc_curve
+    
+    # fill in data frame
+    temp_roc_calcs_by_month_data <- tibble(cmu_name = temp_cmu,
+                                           rain_in = temp_cmu_rain_in,
+                                           month_num = temp_month_num,
+                                           num_obs_stations = temp_num_obs_stations,
+                                           valid_period_hrs = temp_valid_period,
+                                           auc = temp_auc,
+                                           youden_j = temp_youden_j,
+                                           accuracy = temp_accuracy,
+                                           # cutpoint_j = temp_cutpoint_j,
+                                           cutpoint_cutpointr = temp_cutpoint_cutpointr,
+                                           err_decimal_perc = temp_err_decimal_perc,
+                                           cutpoint_tpr_sens = temp_cutpoint_tpr_sens,
+                                           cutpoint_tnr_spec = temp_cutpoint_tnr_spec,
+                                           num_controls = temp_num_controls,
+                                           num_cases = temp_num_cases,
+                                           num_total_obs = temp_num_obs,
+                                           roc_curve_list = temp_roc_curve_list)
+    
+    # bind rows
+    roc_calcs_by_month_data <-  dplyr::bind_rows(roc_calcs_by_month_data, temp_roc_calcs_by_month_data)
+  }
+}
+
+
+# ---- 6. export data ----
+
 
 
 
