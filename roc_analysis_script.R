@@ -18,7 +18,7 @@
 # Youden's J statistic
 # cutoff threshold is max Youden J's stat
 # best to use Youden's over closest topleft according to https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-77
-# value of 0 means test us useless because it gives the same proportion of positive results for cases and contorls
+# value of 0 means test us useless because it gives the same proportion of positive results for cases and controls
 # value of 1 means test has no fp or fn therefore is perfect
 # https://en.wikipedia.org/wiki/Youden%27s_J_statistic
 
@@ -31,16 +31,23 @@
 
 # cutpointr package
 # https://cran.r-project.org/web/packages/cutpointr/vignettes/cutpointr.html
+# https://cran.r-project.org/web/packages/cutpointr/cutpointr.pdf
 
 # roc analysis
 # https://acutecaretesting.org/en/articles/roc-curves-what-are-they-and-how-are-they-used
 # https://www.youtube.com/watch?v=4jRBRDbJemM
 # Youden and Closest Top Left https://academic.oup.com/aje/article/163/7/670/77813
-
+# https://ncss-wpengine.netdna-ssl.com/wp-content/themes/ncss/pdf/Procedures/NCSS/One_ROC_Curve_and_Cutoff_Analysis.pdf
 
 # auc
 # use this to compare tests, 1 indicates perfect fit and below 0.5 indicates a test failure
 # 0.9 - 1 (very good), 0.8 - 0.9 (good), 0.8 - 0.7 (fair), 0.7 - 0.6 (poor), 0 - 0.6 (fail)
+
+# predictor (cmu qpf in inches) --> not obs precip in inches
+# predictor (cmu pc percentages) *** do this!
+# outcome (binary whether obs precip was over rainfall threshold, 0 is not closed and 1 is closed) --> not whether cmu qpf was over rainfall threshold
+# effective closure probability = cutpoint for the cmu pc percentage as predictor analysis
+
 
 # ---- to do ----
 # to do list
@@ -118,12 +125,13 @@ roc_calcs_data <- tibble(cmu_name = as.character(),
                          accuracy = as.numeric(),
                          # cutpoint_j = as.numeric(),
                          cutpoint_cutpointr = as.numeric(),
-                         err_decimal_perc = as.numeric(),
+                         # err_decimal_perc = as.numeric(),
                          cutpoint_tpr_sens = as.numeric(),
                          cutpoint_tnr_spec = as.numeric(),
                          num_controls = as.numeric(),
                          num_cases = as.numeric(),
                          num_total_obs = as.numeric(),
+                         data_list = list(),
                          roc_curve_list = list())
 
 # unique cmu values with their rainfall depths
@@ -159,15 +167,8 @@ for (i in 1:num_cmus) { # i = cmu_name
     temp_data <- roc_data %>%
       dplyr::filter(cmu_name == temp_cmu & valid_period_hrs == temp_valid_period)
     
-    # roc object
-    # temp_roc <- pROC::roc(temp_data$cmu_qpf_binary, temp_data$precip_in, na.rm = TRUE)
-    # names(temp_roc)
-    # plot(temp_roc, print.thres = "best", print.thres.best.method = "youden")
-    # plot(temp_roc, print.thres = "best", print.thres.best.method = "closest.topleft")
-    # these plots are both the same....???
-    
     # cutpointr object
-    temp_cp <- cutpointr::cutpointr(data = temp_data, x = precip_in, class = cmu_qpf_binary, 
+    temp_cp <- cutpointr::cutpointr(data = temp_data, x = cmu_qpf_in, class = precip_binary, 
                                     direction = ">=", pos_class = 1, neg_class = 0, 
                                     method = maximize_metric, metric = youden, na.rm = TRUE)
     # summary(temp_cp)
@@ -188,7 +189,7 @@ for (i in 1:num_cmus) { # i = cmu_name
     temp_cutpoint_cutpointr <- temp_cp$optimal_cutpoint
     
     # percent error between depth and cutpoint
-    temp_err_decimal_perc <- abs(temp_cmu_rain_in - temp_cutpoint_cutpointr) / temp_cmu_rain_in
+    # temp_err_decimal_perc <- abs(temp_cmu_rain_in - temp_cutpoint_cutpointr) / temp_cmu_rain_in
       
     # cutpoint tpr
     # temp_cutpoint_tpr_sens <- as.numeric(pROC::coords(temp_roc, "best", ret = "sensitivity", best.method = "youden"))
@@ -206,6 +207,9 @@ for (i in 1:num_cmus) { # i = cmu_name
     temp_num_cases <- temp_cp_summary$n_pos
     temp_num_obs <- temp_cp_summary$n_obs
     
+    # roc associated data list
+    temp_data_list <- temp_cp$data
+    
     # roc curve output list
     temp_roc_curve_list <- temp_cp$roc_curve
     
@@ -219,12 +223,13 @@ for (i in 1:num_cmus) { # i = cmu_name
                                   accuracy = temp_accuracy,
                                   # cutpoint_j = temp_cutpoint_j,
                                   cutpoint_cutpointr = temp_cutpoint_cutpointr,
-                                  err_decimal_perc = temp_err_decimal_perc,
+                                  # err_decimal_perc = temp_err_decimal_perc,
                                   cutpoint_tpr_sens = temp_cutpoint_tpr_sens,
                                   cutpoint_tnr_spec = temp_cutpoint_tnr_spec,
                                   num_controls = temp_num_controls,
                                   num_cases = temp_num_cases,
                                   num_total_obs = temp_num_obs,
+                                  data_list = temp_data_list,
                                   roc_curve_list = temp_roc_curve_list)
     
     # bind rows
@@ -233,7 +238,7 @@ for (i in 1:num_cmus) { # i = cmu_name
 }
 
 
-# ---- 5. loop through calcs to make an roc analysis table by month ----
+# ---- 6. loop through calcs to make an roc analysis table by month ----
 # make an empty dataframe
 roc_calcs_by_month_data <- tibble(cmu_name = as.character(),
                                   rain_in = as.numeric(),
@@ -368,8 +373,89 @@ for (i in 1:num_cmus) { # i = cmu
 }
 
 
+# ---- 7. look at some of the results ----
+# density plot for lowest Youden stat (U144, 48 hrs)
+low_performance_roc_data <- roc_calcs_data %>%
+  dplyr::filter(cmu_name == "U144" & valid_period_hrs == 48) %>%
+  dplyr::select(data_list) %>%
+  unnest(data_list)
+
+# save cutpoint
+low_performance_cutpoint <- roc_calcs_data %>%
+  dplyr::filter(cmu_name == "U144" & valid_period_hrs == 48) %>%
+  dplyr::select(cutpoint_cutpointr)
+
+# plot low performance result
+ggplot(data = low_performance_roc_data) +
+  geom_density(aes(x = cmu_qpf_in, fill = as.factor(precip_binary))) +
+  geom_vline(xintercept = low_performance_cutpoint$cutpoint_cutpointr) +
+  facet_wrap(~as.factor(precip_binary), scales = "free_y") +
+  theme_classic()
+
+# roc curve data
+low_performance_roc_curve <- roc_calcs_data %>%
+  dplyr::filter(cmu_name == "U144" & valid_period_hrs == 72) %>%
+  dplyr::select(roc_curve_list) %>%
+  unnest(roc_curve_list)
+
+# plot roc curve data
+ggplot(data = low_performance_roc_curve) +
+  geom_line(aes(x = fpr, y = tpr)) +
+  geom_point(aes(x = fpr, y = tpr)) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  labs(x = "False Positive Rate (1-Specificity)", y = "True Positive Rate (Sensitivity)") +
+  theme_classic()
+
+
+# density plot for highest Youden stat (U144, 24 hrs)
+high_performance_roc_data <- roc_calcs_data %>%
+  dplyr::filter(cmu_name == "U144" & valid_period_hrs == 24) %>%
+  dplyr::select(data_list) %>%
+  unnest(data_list)
+
+# save cutpoint
+high_performance_cutpoint <- roc_calcs_data %>%
+  dplyr::filter(cmu_name == "U144" & valid_period_hrs == 24) %>%
+  dplyr::select(cutpoint_cutpointr)
+
+# plot high performance result
+ggplot(data = high_performance_roc_data) +
+  geom_density(aes(x = cmu_qpf_in, fill = as.factor(precip_binary))) +
+  geom_vline(xintercept = high_performance_cutpoint$cutpoint_cutpointr) +
+  facet_wrap(~as.factor(precip_binary), scales = "free_y") +
+  theme_classic()
+
+# roc curve data
+high_performance_roc_curve <- roc_calcs_data %>%
+  dplyr::filter(cmu_name == "U144" & valid_period_hrs == 24) %>%
+  dplyr::select(roc_curve_list) %>%
+  unnest(roc_curve_list)
+
+# plot roc curve data
+ggplot(data = high_performance_roc_curve) +
+  geom_line(aes(x = fpr, y = tpr)) +
+  geom_point(aes(x = fpr, y = tpr)) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  labs(x = "False Positive Rate (1-Specificity)", y = "True Positive Rate (Sensitivity)") +
+  theme_classic()
+
+
+
 # ---- 6. export data ----
 
 
+# ---- testing ----
 
+calc_prob_closure <- function(pop, thresh, qpf) {
+  prob_closure <- (pop/100) * exp(-(thresh/qpf))
+  return(prob_closure)
+}
 
+my_pop <- seq(0, 100, 1)
+my_thresh <- 3
+my_qpf <- seq(0.1, 8, 0.1)
+
+output_1 <- calc_prob_closure(pop = 100, thresh = my_thresh, qpf = my_qpf)
+df <- data.frame(qpf = my_qpf, output = output_1)
+plot(x = my_qpf, y = output_1)
+                                                                                                                                                                    
