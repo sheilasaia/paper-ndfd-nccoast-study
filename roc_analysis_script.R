@@ -86,6 +86,14 @@ hist_precip_data <- read_csv(file = paste0(data_path, "tabular/sheila_generated/
                              col_types = list(col_character(), col_date(), col_number()))
 
 
+# ---- 4. functions ----
+# calculate the probability of closure (as a decimal)
+calc_closure_perc <- function(rain_thresh_in, qpf_in, pop_dec) {
+  cloure_perc <- pop_dec * exp((-rain_thresh/qpf_in)) # percent closure as decimal percent
+  return(cloure_perc)
+}
+
+
 # ---- 4. roc curve analysis ----
 # select metadata columns to join
 loc_metadata_to_join <- hist_precip_metadata_albers_sel %>%
@@ -94,13 +102,15 @@ loc_metadata_to_join <- hist_precip_metadata_albers_sel %>%
 
 # join to ndfd data
 ndfd_data_sel_join <- ndfd_data_sel %>%
+  dplyr::mutate(loc_closure_perc = calc_closure_perc(rain_thresh_in = rain_in, qpf_in = loc_qpf_in, pop_dec = (loc_pop_perc/100)),
+                cmu_closure_perc = calc_closure_perc(rain_thresh_in = rain_in, qpf_in = cmu_qpf_in, pop_dec = (cmu_pop_perc/100)))
   # filter(loc_id %in% c(as.character(unique(hist_precip_metadata_sel$loc_id)))) %>% # don't need this once rerun ndfd_data_sel
-  dplyr::left_join(loc_metadata_to_join, by = c("loc_id", "cmu_name"))
+  dplyr::left_join(loc_metadata_to_join, by = c("loc_id", "cmu_name")) 
 
-# turn qpf to 0 (control: no closure) or 1 (case: closure) based on CMU treshhold
-ndfd_data_binary <- ndfd_data_sel_join %>%
-  dplyr::mutate(loc_qpf_binary = if_else(loc_qpf_in >= rain_in, 1, 0),
-                cmu_qpf_binary = if_else(cmu_qpf_in >= rain_in, 1, 0))
+# turn closure_perc to 0 (control: no closure) or 1 (case: closure) based on CMU treshold
+# ndfd_data_binary <- ndfd_data_sel_join %>%
+#   dplyr::mutate(loc_closure_perc_binary = if_else(loc_qpf_in >= rain_in, 1, 0),
+#                 cmu_closure_perc_binary = if_else(cmu_qpf_in >= rain_in, 1, 0))
 
 # select observations to join
 loc_data_to_join <- hist_precip_data %>%
@@ -108,7 +118,7 @@ loc_data_to_join <- hist_precip_data %>%
   dplyr::select(loc_id, date, precip_in)
 
 # join observations
-roc_data <- ndfd_data_binary %>%
+roc_data <- ndfd_data_sel_join %>%
   dplyr::left_join(loc_data_to_join, by = c("loc_id", "date")) %>%
   dplyr::mutate(precip_binary = if_else(precip_in >= rain_in, 1, 0),
                 month_num = as.numeric(month(date)))
@@ -168,7 +178,7 @@ for (i in 1:num_cmus) { # i = cmu_name
       dplyr::filter(cmu_name == temp_cmu & valid_period_hrs == temp_valid_period)
     
     # cutpointr object
-    temp_cp <- cutpointr::cutpointr(data = temp_data, x = cmu_qpf_in, class = precip_binary, 
+    temp_cp <- cutpointr::cutpointr(data = temp_data, x = cmu_closure_perc, class = precip_binary, 
                                     direction = ">=", pos_class = 1, neg_class = 0, 
                                     method = maximize_metric, metric = youden, na.rm = TRUE)
     # summary(temp_cp)
