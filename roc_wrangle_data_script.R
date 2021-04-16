@@ -180,7 +180,7 @@ ndfd_data_sel <- data.frame(loc_id = as.character(),
 start_time <- now()
 
 # for loop (i = day with data, j = valid period, k = observation)
-for (i in 1:2) {#dim(data_available)[1]) {
+for (i in 1:dim(data_available)[1]) {
   # check if data is available
   status <- data_available$status[i]
   
