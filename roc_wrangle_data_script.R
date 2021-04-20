@@ -326,6 +326,7 @@ stop_time <- now()
 # time to run loop
 stop_time - start_time
 # ~3 min for 1 day x 731 days = 2193 min / 60 = 36 hrs
+# 1.394 days
 
 # ---- 8. check how similar loc and cmu approaches are ----
 # plot loc qpf vs cmu qpf (do ROC for both?)
