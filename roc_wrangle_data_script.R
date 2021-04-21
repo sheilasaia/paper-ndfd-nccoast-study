@@ -171,7 +171,8 @@ ndfd_data_sel <- data.frame(loc_id = as.character(),
                             valid_period_hrs = as.numeric(),
                             loc_pop_perc = as.numeric(),
                             loc_qpf_in = as.numeric(),
-                            cmu_pop_perc = as.numeric(),
+                            cmu_pop_avg_perc = as.numeric(),
+                            cmu_pop_max_perc = as.numeric(),
                             cmu_qpf_in = as.numeric())
 # loc_qpf_in is based on the ndfd grid cell that the gage is in
 # cmu_qpf_in is based on the area weighted avg footprint of the cmu associated with the gage (shellcast)
@@ -227,7 +228,7 @@ for (i in 1:dim(data_available)[1]) {
       temp_loc_coord <- hist_precip_metadata_albers_sel %>%
         dplyr::select(geometry)
       
-      # get value of gridcell that overlaps with each unique location
+      # get value of grid cell that overlaps with each unique location
       temp_loc_pop_list <- raster::extract(temp_pop_raster, temp_loc_coord, weights = FALSE)
       temp_loc_qpf_list <- round(raster::extract(temp_qpf_raster, temp_loc_coord, weights = FALSE), 4)
       
@@ -235,8 +236,7 @@ for (i in 1:dim(data_available)[1]) {
       temp_loc_result_df <- data.frame(loc_id = hist_precip_metadata_albers_sel$loc_id,
                                        temp_loc_pop_result = temp_loc_pop_list,
                                        temp_loc_qpf_result = temp_loc_qpf_list) %>%
-        dplyr::distinct()
-      # there are redundant stations in hist_precip_metadata_albers_sel
+        dplyr::distinct() # there are redundant stations in hist_precip_metadata_albers_sel
       
       # cmu-based calcs (like shellcast)
       # get unique cmu list
@@ -246,8 +246,9 @@ for (i in 1:dim(data_available)[1]) {
       # cmu-based calcs df
       # start with one that's empty
       temp_cmu_result_df <- data.frame(cmu_name = as.character(),
-                                       temp_cmu_pop_result = as.numeric(),
-                                       temp_cmu_qpf_result = as.numeric())
+                                       temp_cmu_pop_avg_result = as.numeric(), # area weighted avg value of pop
+                                       temp_cmu_pop_max_result = as.numeric(), # max value of pop
+                                       temp_cmu_qpf_result = as.numeric()) # area weight avg value of qpf
       
       # run for each unique cmu and append to temp_cmu_result_df
       # do this because there are redundant cmus in hist_precip_metadata_albers_sel
@@ -267,17 +268,22 @@ for (i in 1:dim(data_available)[1]) {
         temp_pop_cmu_raster_perc_cover_df <- data.frame(raster::extract(temp_pop_raster, temp_cmu_bounds, weights = TRUE)[[1]])
         temp_qpf_cmu_raster_perc_cover_df <- data.frame(raster::extract(temp_qpf_raster, temp_cmu_bounds, weights = TRUE)[[1]])
         
-        # calculate area weighted avg value for the pts
+        # calculate max value for pop
         temp_pop_area_weighted_df <- temp_pop_cmu_raster_perc_cover_df %>%
-          dplyr::mutate(area_weighted_avg = value * weight)
+          dplyr::mutate(area_weighted_avg = value * weight,
+                        max_val = max(value))
+        
+        # calculate area weighted avg value for qpf
         temp_qpf_area_weighted_df <- temp_qpf_cmu_raster_perc_cover_df %>%
           dplyr::mutate(area_weighted_avg = value * weight)
         
-        # sum weighted values to get cmu result
         # save data
+        # keep max value to get cmu pop reslut
+        # sum weighted values to get cmu qpf result
         temp_cmu_result_df_part <- data.frame(cmu_name = temp_cmu_name,
-                                              temp_cmu_pop_result = round(sum(temp_pop_area_weighted_df$area_weighted_avg), 4),
-                                              temp_cmu_qpf_result = round(sum(temp_qpf_area_weighted_df$area_weighted_avg), 4))
+                                              temp_cmu_pop_avg_result = round(sum(temp_pop_area_weighted_df$area_weighted_avg), 4),
+                                              temp_cmu_pop_max_result = max(temp_pop_area_weighted_df$max_val),
+                                              temp_cmu_qpf_result = round(sum(temp_qpf_area_weighted_df$area_weighted_avg), 4)) 
         
         # bind results
         temp_cmu_result_df <-  rbind(temp_cmu_result_df, temp_cmu_result_df_part)
@@ -300,7 +306,8 @@ for (i in 1:dim(data_available)[1]) {
                                        valid_period_hrs = temp_valid_period,
                                        loc_pop_perc = temp_loc_cmu_results_df_join$temp_loc_pop_result,
                                        loc_qpf_in = temp_loc_cmu_results_df_join$temp_loc_qpf_result,
-                                       cmu_pop_perc = temp_loc_cmu_results_df_join$temp_cmu_qpf_result,
+                                       cmu_pop_avg_perc = temp_loc_cmu_results_df_join$temp_cmu_pop_avg_result,
+                                       cmu_pop_max_perc = temp_loc_cmu_results_df_join$temp_cmu_pop_max_result,
                                        cmu_qpf_in = temp_loc_cmu_results_df_join$temp_cmu_qpf_result)
       
       # bind results
@@ -342,16 +349,16 @@ ggplot(data = ndfd_data_sel) +
 # export spatial data
 # st_write(cmu_bounds_roc_sel, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_roc_sel.shp"), delete_layer = TRUE)
 # st_write(cmu_bounds_5kmbuf_roc, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_5kmbuf_roc.shp"), delete_layer = TRUE)
-st_write(cmu_bounds_roc_sel, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_roc_full.shp"), delete_layer = TRUE)
-st_write(cmu_bounds_5kmbuf_roc, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_5kmbuf_roc_full.shp"), delete_layer = TRUE)
+st_write(cmu_bounds_roc_sel, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_roc_sel_full.shp"), delete_layer = TRUE)
+st_write(cmu_bounds_5kmbuf_roc, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_5kmbuf_roc_sel_full.shp"), delete_layer = TRUE)
 
 # export precip metadata that overlaps and is 90% complete
 # st_write(hist_precip_metadata_albers_sel, paste0(data_path, "spatial/sheila_generated/hist_precip_data/hist_precip_metadata_albers_sel.shp"), delete_layer = TRUE)
-st_write(hist_precip_metadata_albers_sel, paste0(data_path, "spatial/sheila_generated/hist_precip_data/hist_precip_metadata_albers_full.shp"), delete_layer = TRUE)
+st_write(hist_precip_metadata_albers_sel, paste0(data_path, "spatial/sheila_generated/hist_precip_data/hist_precip_metadata_albers_sel_full.shp"), delete_layer = TRUE)
 
 # export ndfd data
 # write_csv(ndfd_data_sel, paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel.csv"))
-write_csv(ndfd_data_sel, paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_full.csv"))
+write_csv(ndfd_data_sel, paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel_full2.csv"))
 
 
 
