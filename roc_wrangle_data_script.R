@@ -140,6 +140,10 @@ hist_precip_metadata_albers_sel <- hist_precip_metadata_albers %>%
 # number of unique stations
 length(unique(hist_precip_metadata_albers_sel$loc_id))
 # 37
+
+# total number of stations
+length(unique(hist_precip_metadata_albers$loc_id))
+# 1780
  
 # number of unique cmus
 length(unique(hist_precip_metadata_albers_sel$cmu_name))
@@ -333,22 +337,13 @@ stop_time <- now()
 # time to run loop
 stop_time - start_time
 # ~3 min for 1 day x 731 days = 2193 min / 60 = 36 hrs
-# 1.394 days
-
-# ---- 8. check how similar loc and cmu approaches are ----
-# plot loc qpf vs cmu qpf (do ROC for both?)
-ggplot(data = ndfd_data_sel) +
-  geom_point(aes(x = loc_qpf_in, y = cmu_qpf_in, color = month(date, label = TRUE)), alpha = 0.75, size = 3) +
-  labs(x = "QPF value of observation gridcell (in)", y = "Weighted area avg QPF of CMU assoc. w/ observation (in)", color = "Month") +
-  geom_abline(slope = 1, intercept = 0, lty = 2) +
-  theme_classic()
-# very similar so use cmu approach since this is what ShellCast uses
+# 20.39836 hours
 
 
-# ---- 9. export data ----
+# ---- 8. export data ----
 # export spatial data
 # st_write(cmu_bounds_roc_sel, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_roc_sel.shp"), delete_layer = TRUE)
-# st_write(cmu_bounds_5kmbuf_roc, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_5kmbuf_roc.shp"), delete_layer = TRUE)
+# st_write(cmu_bounds_5kmbuf_roc, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_5kmbuf_roc_sel.shp"), delete_layer = TRUE)
 st_write(cmu_bounds_roc_sel, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_roc_sel_full.shp"), delete_layer = TRUE)
 st_write(cmu_bounds_5kmbuf_roc, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_5kmbuf_roc_sel_full.shp"), delete_layer = TRUE)
 
@@ -358,7 +353,5 @@ st_write(hist_precip_metadata_albers_sel, paste0(data_path, "spatial/sheila_gene
 
 # export ndfd data
 # write_csv(ndfd_data_sel, paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel.csv"))
-write_csv(ndfd_data_sel, paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel_full2.csv"))
-
-
+write_csv(ndfd_data_sel, paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel_full.csv"))
 
