@@ -59,10 +59,10 @@
 library(tidyverse)
 library(sf)
 library(here)
-library(tidylog)
 library(lubridate)
 library(forcats)
 library(cutpointr)
+library(tidylog)
 # library(pROC)
 
 
@@ -82,7 +82,7 @@ ndfd_sco_spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_proje
 ndfd_data_sel <- read_csv(paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel_full.csv"), col_names = TRUE)
 
 # precip metadata (that overlaps and is 90% complete)
-hist_precip_metadata_albers_sel <- st_read(paste0(data_path, "spatial/sheila_generated/hist_precip_data/hist_precip_metadata_albers_sel_full.shp"))
+hist_precip_metadata_albers_sel <- read_sf(paste0(data_path, "spatial/sheila_generated/hist_precip_data/hist_precip_metadata_albers_sel_full.shp"))
 
 # import historic precip data (tabular)
 hist_precip_data <- read_csv(file = paste0(data_path, "tabular/sheila_generated/hist_precip_data/hist_precip_data_compiled.csv"), col_names = TRUE,
@@ -96,28 +96,59 @@ calc_closure_perc <- function(rain_thresh_in, qpf_in, pop_notdecimal) {
   return(cloure_perc)
 }
 
-# --- 5. calculate closure and join with metadata ----
-# select metadata columns to join
-loc_metadata_to_join <- hist_precip_metadata_albers_sel %>%
-  st_drop_geometry() %>%
-  dplyr::select(loc_id, cmu_name, rain_in)
 
-# join to ndfd data
-ndfd_data_sel_join <- ndfd_data_sel %>%
-  dplyr::left_join(loc_metadata_to_join, by = c("loc_id", "cmu_name")) %>%
+# ---- 5. wrangling historic precip data ----
+# drop geometry from metadata
+hist_precip_metadata_tabular <- hist_precip_metadata_albers_sel %>%
+  st_drop_geometry()
+  
+# join metadata
+hist_precip_data_join <- hist_precip_data %>%
+  dplyr::left_join(hist_precip_metadata_tabular, by = "loc_id") %>%
+  na.omit()
+  
+# take average by cmu and date
+hist_precip_data_avg <- hist_precip_data_join %>%
+  dplyr::select(loc_id, date, precip_in, cmu_name) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(date, cmu_name) %>%
+  dplyr::summarize(precip_avg_in = round(mean(precip_in, na.rm = TRUE), 2), # calculate average precip
+                   station_count = n()) # keep track of the number of stations being summarized
+
+# cmu and rainfall threshold key
+cmu_rain_thresh_key <- hist_precip_metadata_tabular %>%
+  dplyr::select(cmu_name, rain_in) %>%
+  dplyr::distinct()
+
+# join rainfall threshold to hist_precip_data_avg
+hist_precip_data_avg_join <- hist_precip_data_avg %>%
+  dplyr::left_join(cmu_rain_thresh_key, by = "cmu_name")
+
+
+# ---- 6. wrangling ndfd data ----
+ndfd_data_avg <- ndfd_data_sel %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(date, valid_period_hrs, cmu_name) %>%
+  # use mean to summarize here for both loc- and cmu-based calcs when there are more than one station in a cmu
+  # loc calcs can be different but cmu calcs will be the same, mean will take care of both
+  dplyr::summarize(loc_pop_perc = round(mean(loc_pop_perc, na.rm = TRUE), 2),
+                   loc_qpf_in = round(mean(loc_qpf_in, na.rm = TRUE), 2),
+                   cmu_pop_perc = round(mean(cmu_pop_avg_perc, na.rm = TRUE), 2), # decided not to use cmu_pop_max_perc
+                   cmu_qpf_in = round(mean(cmu_qpf_in, na.rm = TRUE), 2)) %>%
+  dplyr::ungroup() %>%
+  dplyr::left_join(cmu_rain_thresh_key, by = "cmu_name") %>% # need to rejoin
+  dplyr::mutate(loc_closure_perc = calc_closure_perc(rain_thresh_in = rain_in, qpf_in = loc_qpf_in, pop_notdecimal = loc_pop_perc),
+                cmu_closure_perc = calc_closure_perc(rain_thresh_in = rain_in, qpf_in = cmu_qpf_in, pop_notdecimal = cmu_pop_perc)) %>%
   dplyr::mutate(month_chr = fct_relevel(as.character(month(date, label = TRUE)), c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")),
                 month_num = as.numeric(month(date)),
                 month_type = case_when(month_num <= 3 | month_num >= 10 ~ "cool",
                                        month_num > 4 | month_num < 10 ~ "warm"),
-                month_type = fct_relevel(month_type, "warm", "cool"),
-                loc_closure_perc = calc_closure_perc(rain_thresh_in = rain_in, qpf_in = loc_qpf_in, pop_notdecimal = loc_pop_perc),
-                cmu_avg_closure_perc = calc_closure_perc(rain_thresh_in = rain_in, qpf_in = cmu_qpf_in, pop_notdecimal = cmu_pop_avg_perc),
-                cmu_max_closure_perc = calc_closure_perc(rain_thresh_in = rain_in, qpf_in = cmu_qpf_in, pop_notdecimal = cmu_pop_max_perc))
+                month_type = fct_relevel(month_type, "warm", "cool"))
 
 
 # ---- 6. check how similar loc and cmu approaches are ----
 # plot loc qpf vs cmu qpf
-ggplot(data = ndfd_data_sel_join) +
+ggplot(data = ndfd_data_avg) +
   geom_point(aes(x = loc_qpf_in, y = cmu_qpf_in, color = month_chr), alpha = 0.75, size = 3) +
   labs(x = "QPF value of observation gridcell (in)", y = "Weighted area avg QPF of CMU assoc. w/ observation (in)", color = "Month") +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
@@ -126,49 +157,29 @@ ggplot(data = ndfd_data_sel_join) +
 # very similar so use cmu approach since this is what ShellCast uses
 
 # plot loc pop vs cmu avg pop
-ggplot(data = ndfd_data_sel_join) +
-  geom_point(aes(x = loc_pop_perc, y = cmu_pop_avg_perc, color = month_chr), alpha = 0.75, size = 3) +
+ggplot(data = ndfd_data_avg) +
+  geom_point(aes(x = loc_pop_perc, y = cmu_pop_perc, color = month_chr), alpha = 0.75, size = 3) +
   labs(x = "POP value of observation gridcell (%)", y = "Weighted area avg POP of CMU assoc. w/ observation (%)", color = "Month") +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
   facet_wrap(~ month_chr) +
   theme_classic()
 # some scatter all around the 1:1 line
 
-# plot loc pop vs cmu max pop
-ggplot(data = ndfd_data_sel_join) +
-  geom_point(aes(x = loc_pop_perc, y = cmu_pop_max_perc, color = month_chr), alpha = 0.75, size = 3) +
-  labs(x = "POP value of observation gridcell (%)", y = "Max POP of CMU assoc. w/ observation (%)", color = "Month") +
-  geom_abline(slope = 1, intercept = 0, lty = 2) +
-  facet_wrap(~ month_chr) +
-  theme_classic()
-# some scatter but more on top of 1:1 line
-
 # plot loc pc vs cmu pc (with area-weighted avg cmu values)
-ggplot(data = ndfd_data_sel_join) +
-  geom_point(aes(x = loc_closure_perc, y = cmu_avg_closure_perc, color = month_chr), alpha = 0.75, size = 3) +
+ggplot(data = ndfd_data_avg) +
+  geom_point(aes(x = loc_closure_perc, y = cmu_closure_perc, color = month_chr), alpha = 0.75, size = 3) +
   labs(x = "location closure (%)", y = "cmu weighted area avg closure (%)", color = "Month") +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
   facet_wrap(~ valid_period_hrs + month_chr, nrow = 3, ncol = 12) +
   theme_classic()
 
-# plot loc pc vs cmu pc (with max cmu values)
-ggplot(data = ndfd_data_sel_join) +
-  geom_point(aes(x = loc_closure_perc, y = cmu_max_closure_perc, color = month_chr), alpha = 0.75, size = 3) +
-  labs(x = "location closure (%)", y = "cmu max closure (%)", color = "Month") +
-  geom_abline(slope = 1, intercept = 0, lty = 2) +
-  facet_wrap(~ valid_period_hrs + month_chr, nrow = 3, ncol = 12) +
-  theme_classic()
 
-
-# ---- 7. roc curve analysis ----
-# select observations to join
-loc_data_to_join <- hist_precip_data %>%
-  dplyr::mutate(loc_id = as.character(loc_id)) %>%
-  dplyr::select(loc_id, date, precip_in)
-
-# join observations
-roc_data <- ndfd_data_sel_join %>%
-  dplyr::left_join(loc_data_to_join, by = c("loc_id", "date")) %>%
+# ---- 7. join data for roc analysis ----
+roc_data <- ndfd_data_avg %>%
+  dplyr::left_join(hist_precip_data_avg_join, by = c("date", "cmu_name", "rain_in")) %>%
+  dplyr::select(loc_id:valid_period_hrs, rain_in:precip_in) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by() %>%
   dplyr::mutate(precip_binary = if_else(precip_in >= rain_in, 1, 0)) # cool month vs warm month? (cool = Oct - Mar, warm = Apr - Sep)
 
 
@@ -307,24 +318,7 @@ cutpointr_output_col_names <- c("direction", "optimal_cutpoint", "method", "youd
 # cutpointr_output_col_names_dot <- c(paste0("output.", cutpointr_output_col_names))
 
 # make an empty dataframe
-roc_calcs_data <- list(
-  run_info = tibble(cmu_name = as.character(),
-                    rain_in = as.numeric(),
-                    num_obs_stations = as.numeric(),
-                    valid_period_hrs = as.numeric(),
-                    num_controls = as.numeric(),
-                    num_cases = as.numeric(),
-                    num_total_obs = as.numeric()),
-  run_output = read_csv("\n", col_names = cutpointr_output_col_names, 
-                        col_types = list(col_character(), col_double(), col_character(), col_double(), col_double(), 
-                                         col_double(), col_double(), col_double(), col_double(), col_double(), 
-                                         col_double(), col_character(), col_character(), col_guess(), col_guess(), col_guess())))
-
-roc_calcs_test <- list(
-  run_info = tibble(),
-  run_output_data = tibble(),
-  run_output_roc_curve = tibble(),
-  run_output_boot = tibble())
+roc_calcs_data <- NULL
 
 # unique cmu values with their rainfall depths
 cmu_info_unique <- roc_data %>%
