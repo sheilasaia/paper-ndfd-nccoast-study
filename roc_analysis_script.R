@@ -33,6 +33,7 @@
 # cutpointr package
 # https://cran.r-project.org/web/packages/cutpointr/vignettes/cutpointr.html
 # https://cran.r-project.org/web/packages/cutpointr/cutpointr.pdf
+# preprint: https://arxiv.org/pdf/2002.09209.pdf
 
 # roc analysis
 # https://acutecaretesting.org/en/articles/roc-curves-what-are-they-and-how-are-they-used
@@ -63,7 +64,7 @@ library(here)
 library(lubridate)
 library(forcats)
 library(cutpointr)
-library(tidylog)
+# library(tidylog)
 # library(pROC)
 
 
@@ -110,7 +111,7 @@ hist_precip_data_join <- hist_precip_data %>%
   na.omit()
 
 # check number of unique cmus
-length(unique(hist_precip_data_join$cmu_name))
+# length(unique(hist_precip_data_join$cmu_name))
 # 91 ok!
   
 # take average by cmu and date
@@ -122,7 +123,7 @@ hist_precip_data_avg <- hist_precip_data_join %>%
                    station_count_day = n()) # keep track of the number of stations being summarized for each day
 
 # check number of unique cmus
-length(unique(hist_precip_data_avg$cmu_name))
+# length(unique(hist_precip_data_avg$cmu_name))
 # 91 ok!
 
 # cmu and rainfall threshold key
@@ -198,7 +199,7 @@ roc_data <- ndfd_data_avg %>%
   dplyr::select(date, valid_period_hrs, cmu_name, rain_in, station_count_day, month_chr:month_type, loc_closure_perc, cmu_closure_perc, precip_avg_in, precip_binary)
 
 # check number of unique cmu
-length(unique(roc_data$cmu_name))
+# length(unique(roc_data$cmu_name))
 # 91 ok!
 
 
@@ -244,7 +245,7 @@ ggplot(cmu_summary) +
   theme_classic()
 
 
-# ---- 11. loop through calcs to make an roc analysis table ----
+# ---- 11. roc analysis for each cmu and valid period ----
 # make an empty dataframe
 roc_calcs_data <- NULL
 
@@ -272,8 +273,11 @@ run_num = 0
 # number of bootstrap runs
 num_boot_runs = 500
 
+# record start time
+start_time <- now()
+
 # loop
-for (i in 1:2) { #num_cmus) { # i = cmu_name
+for (i in 1:num_cmus) { # i = cmu_name
   # pick cmu
   temp_cmu <- cmu_info_unique$cmu_name[i]
   
@@ -291,9 +295,10 @@ for (i in 1:2) { #num_cmus) { # i = cmu_name
     
     # bootstrapped cutpoint results without season subgroup
     # youden's j metric
+    set.seed(100)
     temp_result_no_sub_youden <- cutpointr::cutpointr(data = temp_roc_data, x = cmu_closure_perc, class = precip_binary, 
                                                       direction = ">=", pos_class = 1, neg_class = 0, 
-                                                      boot_runs = num_boot_runs, 
+                                                      boot_runs = num_boot_runs, boot_stratify = TRUE,
                                                       method = maximize_metric, metric = youden, silent = TRUE) %>%
       dplyr::mutate(subgroup = "none") %>%
       dplyr::select(subgroup, direction:boot) %>%
@@ -302,11 +307,13 @@ for (i in 1:2) { #num_cmus) { # i = cmu_name
                     cmu_name = temp_cmu,
                     valid_period_hrs = temp_valid_period) %>%
       dplyr::select(- youden)
+    # Does boot_strategy (1) exactly equal or (2) more reflective of distribution? - I think it's #2 here.
     
     # accuracy metric
+    set.seed(100)
     temp_result_no_sub_acc <- cutpointr::cutpointr(data = temp_roc_data, x = cmu_closure_perc, class = precip_binary, 
                                                    direction = ">=", pos_class = 1, neg_class = 0, 
-                                                   boot_runs = num_boot_runs, 
+                                                   boot_runs = num_boot_runs, boot_stratify = TRUE,
                                                    method = maximize_metric, metric = accuracy, silent = TRUE) %>%
       dplyr::mutate(subgroup = "none") %>%
       dplyr::select(subgroup, direction:boot) %>%
@@ -317,9 +324,10 @@ for (i in 1:2) { #num_cmus) { # i = cmu_name
       dplyr::select(- accuracy)
     
     # cohen's kappa metric
+    set.seed(100)
     temp_result_no_sub_cohens <- cutpointr::cutpointr(data = temp_roc_data, x = cmu_closure_perc, class = precip_binary, 
                                                       direction = ">=", pos_class = 1, neg_class = 0, 
-                                                      boot_runs = num_boot_runs, 
+                                                      boot_runs = num_boot_runs, boot_stratify = TRUE,
                                                       method = maximize_metric, metric = cohens_kappa, silent = TRUE) %>%
       dplyr::mutate(subgroup = "none") %>%
       dplyr::select(subgroup, direction:boot) %>%
@@ -331,9 +339,10 @@ for (i in 1:2) { #num_cmus) { # i = cmu_name
     
     # bootstrapped cutpoint results with season subgroup
     # youden's j metric
+    set.seed(100)
     temp_result_sub_youden <- cutpointr::cutpointr(data = temp_roc_data, x = cmu_closure_perc, class = precip_binary, subgroup = month_type,
                                                    direction = ">=", pos_class = 1, neg_class = 0, 
-                                                   boot_runs = num_boot_runs, 
+                                                   boot_runs = num_boot_runs, boot_stratify = TRUE,
                                                    method = maximize_metric, metric = youden, silent = TRUE) %>%
       dplyr::select(- grouping) %>%
       dplyr::mutate(metric = "youden",
@@ -343,9 +352,10 @@ for (i in 1:2) { #num_cmus) { # i = cmu_name
       dplyr::select(- youden)
     
     # accuracy metric
+    set.seed(100)
     temp_result_sub_acc <- cutpointr::cutpointr(data = temp_roc_data, x = cmu_closure_perc, class = precip_binary, subgroup = month_type,
                                                 direction = ">=", pos_class = 1, neg_class = 0, 
-                                                boot_runs = num_boot_runs, 
+                                                boot_runs = num_boot_runs, boot_stratify = TRUE,
                                                 method = maximize_metric, metric = accuracy, silent = TRUE) %>%
       dplyr::select(- grouping) %>%
       dplyr::mutate(metric = "accuracy",
@@ -355,9 +365,10 @@ for (i in 1:2) { #num_cmus) { # i = cmu_name
       dplyr::select(- accuracy)
     
     # cohen's kappa metric
+    set.seed(100)
     temp_result_sub_cohens <- cutpointr::cutpointr(data = temp_roc_data, x = cmu_closure_perc, class = precip_binary, subgroup = month_type,
                                                    direction = ">=", pos_class = 1, neg_class = 0, 
-                                                   boot_runs = num_boot_runs, 
+                                                   boot_runs = num_boot_runs, boot_stratify = TRUE,
                                                    method = maximize_metric, metric = cohens_kappa, silent = TRUE) %>%
       dplyr::select(- grouping) %>%
       dplyr::mutate(metric = "cohens_kappa",
@@ -387,8 +398,28 @@ for (i in 1:2) { #num_cmus) { # i = cmu_name
   }
 }
 
+# print time now
+stop_time <- now()
+
+# time to run loop
+stop_time - start_time
+# ~2 min x 91 cmu's x 3 valid periods = 546 min / 60 = 9.1 hrs
+# actual: ? hours
+
 # export
-write_csv(roc_calcs_data, paste0(data_path, "tabular/sheila_generated/roc_analysis/roc_calcs_data.csv"))
+saveRDS(roc_calcs_data, file = paste0(data_path, "tabular/sheila_generated/roc_analysis/roc_calcs_data.rds"))
+
+# to read in use...
+# roc_calcs_data <- readRDS(paste0(data_path, "tabular/sheila_generated/roc_analysis/roc_calcs_data.rds"))
+# DO NOT TRY TO VIEW THIS FILE! RSTUDIO WILL CRASH! :(
+
+# save a copy of the file without the nested tibbles (data, boot, and roc_curve columns)
+roc_calcs_data_small <- roc_calcs_data %>%
+  dplyr::select(run_num_id:predictor, metric:valid_period_hrs)
+
+# export
+# write_csv(roc_calcs_data_small, paste0(data_path, "tabular/sheila_generated/roc_analysis/roc_calcs_data_small.rds"))
+write_csv(roc_calcs_data_small, paste0(data_path, "tabular/sheila_generated/roc_analysis/roc_calcs_data_small.csv"))
 
 
 # ---- 12. look at some of the results ----
