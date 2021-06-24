@@ -1,6 +1,6 @@
 
 # ---- script header ----
-# script name: combine_hist_precip_obs_data.R
+# script name: combine_obs_data_script.R
 # purpose of script: combine all historic point observations of precip
 # author: sheila saia
 # date created: 20210111

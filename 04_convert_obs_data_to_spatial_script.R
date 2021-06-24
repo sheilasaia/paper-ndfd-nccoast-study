@@ -1,5 +1,5 @@
 # ---- script header ----
-# script name: historic_precip_tabular_to_spatial_script.R
+# script name: obs_data_tabular_to_spatial_script.R
 # purpose of script: takes all tabular historic records and converts them to spatial data
 # author: sheila saia
 # date created: 20201109
@@ -26,10 +26,10 @@ library(here)
 
 # ---- 2. define paths and projections ----
 # observed (historic) precip tabular data path
-tabular_data_input_path <- here::here("data", "tabular", "obs_precip_tidy")
+tabular_data_input_path <- here::here("data", "tabular", "obs_data_tidy")
 
 # observed (historic) precip spatial data path
-spatial_data_output_path <- here::here("data", "spatial", "obs_precip_tidy")
+spatial_data_output_path <- here::here("data", "spatial", "obs_data_tidy")
 
 # define epsg for wgs 84
 wgs84_epsg <- 4326
@@ -41,10 +41,10 @@ conus_albers_epsg <- 5070
 
 # ---- 3. load in data ----
 # data
-obs_precip_data <- read_csv(paste0(tabular_data_input_path, "/obs_precip_data_compiled.csv"), col_names = TRUE, col_types = cols(.default = col_character()))
+obs_precip_data <- read_csv(paste0(tabular_data_input_path, "/obs_data_compiled.csv"), col_names = TRUE, col_types = cols(.default = col_character()))
 
 # metadata
-obs_precip_metadata <- read_csv(paste0(tabular_data_input_path, "/obs_precip_metadata_compiled.csv"), col_names = TRUE, col_types = cols(.default = col_character()))
+obs_precip_metadata <- read_csv(paste0(tabular_data_input_path, "/obs_metadata_compiled.csv"), col_names = TRUE, col_types = cols(.default = col_character()))
 
 
 # ---- check how complete ----
@@ -72,5 +72,5 @@ head(obs_precip_spatial_metadata)
 
 
 # ---- export ----
-st_write(obs_precip_spatial_metadata, paste0(spatial_data_output_path, "/obs_precip_metadata_albers.shp"), delete_layer = TRUE)
+st_write(obs_precip_spatial_metadata, paste0(spatial_data_output_path, "/obs_metadata_albers.shp"), delete_layer = TRUE)
 
