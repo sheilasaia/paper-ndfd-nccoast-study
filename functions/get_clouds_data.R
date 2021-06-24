@@ -1,7 +1,6 @@
-
 # ---- script header ----
-# script name: get_sco_api_data.R
-# purpose of script: function that gets data from the NC SCO API for a specified network, start date, and end date
+# script name: get_clouds_data.R
+# purpose of script: function that gets data from the CLOUDS API for a specified network, start date, and end date
 # author: sheila saia
 # date created: 20200908
 # email: ssaia@ncsu.edu
@@ -9,7 +8,11 @@
 
 # ---- notes ----
 # notes:
- 
+# CLOUDS API is here: https://api.climate.ncsu.edu/
+# CLOUDS API help: https://api.climate.ncsu.edu/help
+
+# output descriptions:
+
 # data column descriptions
 # location_id - originally called "location" in API output, renamed to match similar metadata column (as db key), location of data
 # location_id_code - location of data (replicate of location_id?)
@@ -42,29 +45,32 @@
 
 
 # ---- to do ----
-# to do list
+# to do list:
+# TODO allow for multiple networks (i.e., a list) as an input to clouds_network
+# TODO allow for different step sizes (i.e., month, day, hour) --> right now is just daily
+# TODO allow for other parameter functionality (e.g., specific location, etc.)
+# TODO add package dependencies
 
-# TODO allow for multiple networks (i.e., a list) as an input to ncsco_network
-# TODO allow for different step sizes (i.e., month, day, hour)
 
-# ----
-#' Grab data from the NC SCO API for a specified network.
+# ---- function ----
+#' Grab data from the CLOUDS API for a specified network.
 #'
-#' @param ncsco_network A string describing the valid NC SCO API network name (can only be one value i.e., "ASOS")
+#' @param clouds_network A string describing the valid CLOUDS network name (can only be one value e.g., "ECONET")
+#' @param clouds_var A string describing the valid CLOUDS variable name (can only be one value e.g., "precip")
 #' @param start_date A YYYY-MM-DD string representing the start date of the data request (e.g., "2020-01-01")
 #' @param end_date A YYYY-MM-DD string representing the end date of the data request, must be later than start_date (e.g., "2020-09-08")
-#' @param api_key A string describing the NC SCO API key
+#' @param api_key A string describing the CLOUDS key
 #' @return A list with two tibbles (data and metadata) for the specified network and date range. NOTE: All colunms are in the character format!
 #' 
 #' Requires read_sco_api_metadata.R function
-get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, api_key) {
+get_clouds_data <- function(api_key, clouds_network, clouds_var, start_date, end_date) {
   # step by month
   # date list df with start and end date for first step (i.e., the first month)
   date_step_list <- data.frame(start_date = ymd(start_date),
-                               end_date = ymd(start_date) %m+% months(1) %m-% days(1))
+  #                              end_date = ymd(start_date) %m+% months(1) %m-% days(1))
   # step by day
   # date_step_list <- data.frame(start_date = ymd(start_date),
-  #                              end_date = ymd(start_date) %m+% days(1))
+                               end_date = ymd(start_date) %m+% days(1))
   
   # number of steps
   num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "month"))
@@ -93,6 +99,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
   # else no appending
   
   # create empty df's for data and metadata
+  # data_raw <- NULL
   data_raw <- tibble(location_id = character(),
                      datetime_et = character(),
                      var = character(),
@@ -106,6 +113,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
                      obnum = character(),
                      value_accum = character())
   
+  # metadata_raw <- NULL
   metadata_raw <- tibble(location_id = character(),
                          location_id_code = character(), # not really sure what this is...looks the same as location_id
                          network_type = character(),
@@ -128,8 +136,8 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     
     # define url parts that stay the same
     base_url <- "https://api.climate.ncsu.edu/data.php?"
-    url_loc <- paste0("loc=type=", ncsco_network, "&")
-    url_var <- paste0("var=", ncsco_var, "&")
+    url_loc <- paste0("loc=type=", clouds_network, "&")
+    url_var <- paste0("var=", clouds_var, "&")
     url_state <- "state=NC&"
     url_start_date <- paste0("start=", temp_start_date_sel, "&")
     url_end_date <- paste0("end=", temp_end_date_sel, "&")
@@ -141,7 +149,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     
     # put all together to get query url
     query_url <- paste0(base_url, url_loc, url_state, url_var, url_start_date, url_end_date, url_int, url_output, url_attrib, url_key)
-
+    
     # replace spaces in query url with %20 otherwise will get api error
     query_url_fix <- URLencode(query_url) # need to replace " " with "%20"
     
@@ -150,7 +158,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     
     # query
     temp_data_query_raw <- httr::GET(query_url_fix)
-
+    
     # print status
     print("query finished")
     
@@ -179,8 +187,8 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
           select(location_id, datetime_et, var:value_accum) # make location id column the same as metadata, use date as character columns for now
         
         # use function
-        temp_metadata_raw <- read_ncsco_api_metadata(temp_data_text_raw)
-
+        temp_metadata_raw <- read_clouds_metadata(temp_data_text_raw)
+        
         # need check to stop if data column names aren't the same
         temp_data_cols <- names(temp_data_raw)
         data_cols <- names(data_raw)
@@ -204,7 +212,7 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
         # print issue if not the same
         else {
           print(paste0("cannot append step ", j, " of ", num_steps, " steps because data and/or metadata columns don't match expected"))
-        
+          
           # move to next iterator
           next
         }
@@ -229,7 +237,9 @@ get_ncsco_api_data <- function(ncsco_network, ncsco_var, start_date, end_date, a
     }
   }
   
+  # final tidy of metadata
+  metadata_raw_no_duplicates <- metadata_raw %>% distinct_all()
+  
   # return results
-  return(list(data_raw = data_raw, metadata_raw = metadata_raw))
+  return(list(data_raw = data_raw, metadata_raw = metadata_raw_no_duplicates))
 }
-

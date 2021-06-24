@@ -19,57 +19,55 @@
 library(tidyverse)
 library(lubridate)
 library(tidylog)
+library(here)
 
 
 # ---- 2. define paths ----
-# cocorahs tabular raw data path
-tabular_cocorahs_input_data_raw_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/hist_precip_data/"
-
-# sci api tabular raw data path
-tabular_sco_api_input_data_raw_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sco_api_raw/"
+# tabular raw data path
+tabular_data_input_path <- here::here("data", "tabular", "obs_precip_raw")
 
 # output path
-tabular_compiled_output_data_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/hist_precip_data/"
+tabular_data_output_path <- here::here("data", "tabular", "obs_precip_tidy")
 
 
 # ---- 3. load data ----
 # cocorahs
-cocorahs_data_raw <- read_csv(paste0(tabular_cocorahs_input_data_raw_path, "cocorahs_data.csv"), col_types = cols(.default = col_character()))
-cocorahs_metadata_raw <- read_csv(paste0(tabular_cocorahs_input_data_raw_path, "cocorahs_metadata.csv"), col_types = cols(.default = col_character()))
+cocorahs_data_raw <- read_csv(paste0(tabular_data_input_path, "/cocorahs_data_raw.csv"), col_types = cols(.default = col_character()))
+cocorahs_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/cocorahs_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # sco api data
 # NOTE: All columns are in the character format!
 # asos
-asos_data_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "asos_data_raw.csv"), col_types = cols(.default = col_character()))
-asos_metadata_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "asos_metadata_raw.csv"), col_types = cols(.default = col_character()))
+asos_data_raw <- read_csv(paste0(tabular_data_input_path, "/asos_data_raw.csv"), col_types = cols(.default = col_character()))
+asos_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/asos_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # awos
-awos_data_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "awos_data_raw.csv"), col_types = cols(.default = col_character()))
-awos_metadata_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "awos_metadata_raw.csv"), col_types = cols(.default = col_character()))
+awos_data_raw <- read_csv(paste0(tabular_data_input_path, "/awos_data_raw.csv"), col_types = cols(.default = col_character()))
+awos_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/awos_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # coop
-coop_data_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "coop_data_raw.csv"), col_types = cols(.default = col_character()))
-coop_metadata_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "coop_metadata_raw.csv"), col_types = cols(.default = col_character()))
+coop_data_raw <- read_csv(paste0(tabular_data_input_path, "/coop_data_raw.csv"), col_types = cols(.default = col_character()))
+coop_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/coop_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # econet
-econet_data_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "econet_data_raw.csv"), col_types = cols(.default = col_character()))
-econet_metadata_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "econet_metadata_raw.csv"), col_types = cols(.default = col_character()))
+econet_data_raw <- read_csv(paste0(tabular_data_input_path, "/econet_data_raw.csv"), col_types = cols(.default = col_character()))
+econet_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/econet_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # ncsu
-ncsu_data_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "ncsu_data_raw.csv"), col_types = cols(.default = col_character()))
-ncsu_metadata_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "ncsu_metadata_raw.csv"), col_types = cols(.default = col_character()))
+ncsu_data_raw <- read_csv(paste0(tabular_data_input_path, "/ncsu_data_raw.csv"), col_types = cols(.default = col_character()))
+ncsu_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/ncsu_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # nos
-nos_data_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "nos_data_raw.csv"), col_types = cols(.default = col_character()))
-nos_metadata_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "nos_metadata_raw.csv"), col_types = cols(.default = col_character()))
+nos_data_raw <- read_csv(paste0(tabular_data_input_path, "/nos_data_raw.csv"), col_types = cols(.default = col_character()))
+nos_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/nos_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # raws-mw
-rawsmw_data_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "raws-mw_data_raw.csv"), col_types = cols(.default = col_character()))
-rawsmw_metadata_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "raws-mw_metadata_raw.csv"), col_types = cols(.default = col_character()))
+rawsmw_data_raw <- read_csv(paste0(tabular_data_input_path, "/raws-mw_data_raw.csv"), col_types = cols(.default = col_character()))
+rawsmw_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/raws-mw_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # threadex
-threadex_data_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "threadex_data_raw.csv"), col_types = cols(.default = col_character()))
-threadex_metadata_raw <- read_csv(paste0(tabular_sco_api_input_data_raw_path, "threadex_metadata_raw.csv"), col_types = cols(.default = col_character()))
+threadex_data_raw <- read_csv(paste0(tabular_data_input_path, "/threadex_data_raw.csv"), col_types = cols(.default = col_character()))
+threadex_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/threadex_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 
 # ---- 4. check data dimensions ----
@@ -138,8 +136,7 @@ hist_precip_data_compiled <- rbind(cocorahs_data_raw,
          loc_id = as.character(location_id)) %>% #,
          #precip_month_acc_in = as.numeric(value_accum)) %>%
   select(loc_id, date, precip_in) %>% # , precip_month_acc_in) %>%
-  arrange(loc_id, date) # %>%
-  # na.omit()
+  arrange(loc_id, date)
 # Input `precip_in` is `as.numeric(value)`. error because there are some characters in the value column - these will become NA's which is fine
 
 #compile and tidy up metadata
@@ -165,8 +162,9 @@ hist_precip_metadata_compiled <- rbind(cocorahs_metadata_raw,
   arrange(network, city)
 # Input `elev_ft` is `as.numeric(elevation_feet)`. error because there are some characters in the elevation_feet column - these will become NA's which is fine
 
+
 # ---- 6. export data ----
-write_csv(x = hist_precip_data_compiled, path = paste0(tabular_compiled_output_data_path, "hist_precip_data_compiled.csv"))
-write_csv(x = hist_precip_metadata_compiled, path = paste0(tabular_compiled_output_data_path, "hist_precip_metadata_compiled.csv"))
+write_csv(x = hist_precip_data_compiled, path = paste0(tabular_data_output_path, "/obs_precip_data_compiled.csv"))
+write_csv(x = hist_precip_metadata_compiled, path = paste0(tabular_data_output_path, "/obs_precip_metadata_compiled.csv"))
 
 

@@ -1,6 +1,6 @@
 # ---- script header ----
-# script name: read_ncsco_api_metadata.R
-# purpose of script: defines a function that reads metadata (only) from the NC SCO API
+# script name: read_clouds_metadata.R
+# purpose of script: defines a function that reads metadata (only) from the CLOUDS API
 # author: sheila saia
 # date created: 20200618
 # email: ssaia@ncsu.edu
@@ -8,19 +8,22 @@
 
 # ---- notes ----
 # notes:
- 
+
 
 # ---- to do ----
-# to do list
+# to do list:
+# TODO allow for multiple networks (i.e., a list) as an input to clouds_network
+# TODO allow for different step sizes (i.e., month, day, hour) --> right now is just daily
+# TODO allow for other parameter functionality (e.g., specific location, etc.)
+# TODO add package dependencies
 
 
-# ----  
-
-#' Grab metadata from the NC SCO API.
+# ---- function ----
+#' Grab metadata from the CLOUDS API.
 #'
-#' @param query_raw_text The raw text from a NC SCO API query.
-#' @return A dataframe with tidied metadata based on the NC SCO API query.
-read_ncsco_api_metadata <- function(query_raw_text) {
+#' @param query_raw_text The raw text from a CLOUDS API query.
+#' @return A dataframe with tidied metadata based on the CLOUDS API query.
+read_clouds_metadata <- function(query_raw_text) {
   
   # grab metadata from url
   metadata_raw <- read_lines(file = query_raw_text)
@@ -63,22 +66,21 @@ read_ncsco_api_metadata <- function(query_raw_text) {
   
   # no headers
   # metadata_repl_data <- data.frame(data = metadata_data_no_header_checked) %>%
-    # mutate(row_id = seq(1, length(metadata_data_no_header), 1),
-    #        split_data = str_split(data, pattern = ",")) %>%
-    # unnest(split_data) %>%
-    # group_by(row_id) %>%
-    # count() %>%
-    # select(row_id, split_data) %>% 
-    # pivot_wider(names_from = metadata_repl_header_fix$header, values_from = split_data)
-    # rowwise() %>%
-    # purrr:::map_df(str_split(string = .$data, pattern = ","))
-    # separate(col = metadata_repl_header_fix, sep = ",", remove = FALSE)
+  # mutate(row_id = seq(1, length(metadata_data_no_header), 1),
+  #        split_data = str_split(data, pattern = ",")) %>%
+  # unnest(split_data) %>%
+  # group_by(row_id) %>%
+  # count() %>%
+  # select(row_id, split_data) %>% 
+  # pivot_wider(names_from = metadata_repl_header_fix$header, values_from = split_data)
+  # rowwise() %>%
+  # purrr:::map_df(str_split(string = .$data, pattern = ","))
+  # separate(col = metadata_repl_header_fix, sep = ",", remove = FALSE)
   
   # add tidy header and read in as csv
   metadata_tidy <- read_csv(c(metadata_repl_header, metadata_data_no_header_checked), 
                             col_names = TRUE, 
-                            col_types = cols(.default = col_character())) %>%
-    distinct_all() # delete replicates
+                            col_types = cols(.default = col_character()))
   # NOTE: All colunms are in the character format!
   
   return(metadata_tidy) 

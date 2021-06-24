@@ -1,6 +1,6 @@
 # ---- script header ----
 # script name: ncsco_api_retrieval_script
-# purpose of script: retrieve data from the nc sco api
+# purpose of script: retrieve data from the CLOUDS API
 # author: sheila saia
 # date created: 20200610
 # email: ssaia@ncus.edu
@@ -8,8 +8,8 @@
 
 # ---- notes ----
 # notes:
-# nc sco api is here: https://api.climate.ncsu.edu/
-# nc sco api help: https://api.climate.ncsu.edu/help
+# CLOUDS API is here: https://api.climate.ncsu.edu/
+# CLOUDS API help: https://api.climate.ncsu.edu/help
 
 # networks available with weater data: 
 # see https://api.climate.ncsu.edu/networks for the full list
@@ -18,8 +18,8 @@
 # Buoy Network (BUOY) - operated by the National Data Buoy Center (NDBC)
 # Coastal Marine Automated Network (CMAN) - operated by the National Data Buoy Center (NDBC)
 # Cooperative Network (COOP) - operated by the National Centers for Environmental Information (NCEI)
-# Environment and Climate Observing Network (ECONET) - operated by NC State Climate Office (NCSCO)
-# ECONet NCSU Campus Sites (NCSU) - operated by NC State Climate Office (NCSCO)
+# Environment and Climate Observing Network (ECONET) - operated by NC State Climate Office (SCO)
+# ECONet NCSU Campus Sites (NCSU) - operated by NC State Climate Office (SCO)
 # National Ocean Service (NOS) - operated by the National Data Buoy Center (NDBC)
 # Remote Automatic Weather Stations (RAWS-MW) - operated by the US Forest Service (USFS)
 # Threaded Station Extremes (THREADEX) - operated by NOAA regional climate centers
@@ -73,7 +73,7 @@
 
 
 # ---- to do ----
-
+# to do list:
 # TODO regenerate api key (hash) code for api (not sure what this means now...?)
 # TODO make tests in case data isn't available and nothing to append or too much to append
 # TODO use here package for paths - hard coding them for now
@@ -85,70 +85,63 @@ library(tidyverse)
 library(RCurl)
 library(lubridate)
 library(httr)
+library(here)
+library(tidylog)
 
 
-# ---- 2. source functions ----
-# set data path
-data_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sco_api_raw/"
+# ---- 2. set keys and paths ----
+# set tabular data export path
+tabular_data_output_path <- here::here("data", "tabular", "obs_precip_raw")
 
-# set path to functions directory
-functions_path <- "/Users/sheila/Documents/github/paper-ndfd-nccoast-study/functions/"
+# get sco clouds api key (need to request this from the nc sco)
+CLOUDS_API_KEY <- Sys.getenv("CLOUDS_API_KEY")
 
-# source functions
-source(paste0(functions_path, "read_ncsco_api_metadata.R"))
-source(paste0(functions_path, "get_ncsco_api_data.R"))
-
-
-# ---- 3. define api key and paths
-# get nc sco api key (need to request this from the nc sco)
-NCSOC_API_KEY <- Sys.getenv("NCSOC_API_KEY")
-
-# data export path
-data_export_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sco_api_raw/"
+# ---- 3. source functions ----
+source(here::here("functions", "read_clouds_metadata.R"))
+source(here::here("functions", "get_clouds_data.R"))
 
 
 # ---- 4. get data for multiple networks ----
 # list all networks to pull
-my_ncsco_networks = c("ASOS", "AWOS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
-# my_ncsco_networks = c("ASOS", "AWOS", "BUOY", "CMAN", "CoCoRaHS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
+my_clouds_networks = c("ASOS", "AWOS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
+# my_clouds_networks = c("ASOS", "AWOS", "BUOY", "CMAN", "CoCoRaHS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
 # BUOY there's no data coming up
 # CMAN there's no data coming up
-# CoCoRaHS data get directly from their website (for free)
+# CoCoRaHS data get directly from their website
 
-for (n in 1:length(my_ncsco_networks)) {
+for (n in 1:length(my_clouds_networks)) {
   # pick network
-  temp_ncsco_network <- my_ncsco_networks[n]
+  temp_clouds_network <- my_clouds_networks[n]
   
   # get data
-  data_list <- get_ncsco_api_data(ncsco_network = temp_ncsco_network, 
-                                  ncsco_var = "precip1m", # accumulated precipitation at 1 m above Earth's surface
-                                  start_date = "20150101", 
-                                  end_date = "20161231", 
-                                  api_key = NCSOC_API_KEY)
+  data_list <- get_clouds_data(api_key = CLOUDS_API_KEY, 
+                               clouds_network = temp_clouds_network, 
+                               clouds_var = "precip1m", # accumulated precipitation at 1 m above Earth's surface 
+                               start_date = "20150101", 
+                               end_date = "20161231")
   
   # define data
   data_raw <- data_list$data_raw
   # NOTE: All columns are in the character format!
   
   # define metadata and keep replicates
-  metadata_raw <- data_list$metadata_raw %>%
-    distinct() # keep unique values
+  metadata_raw <- data_list$metadata_raw
   # NOTE: All columns are in the character format!
   
   # only export if there's data
   if (dim(data_raw)[1] > 0) {
     # export
-    write_csv(data_raw, paste0(data_path, str_to_lower(temp_ncsco_network), "_data_raw.csv"))
-    write_csv(metadata_raw, paste0(data_path, str_to_lower(temp_ncsco_network), "_metadata_raw.csv"))
+    write_csv(x = data_raw, file = paste0(tabular_data_output_path, "/", str_to_lower(temp_clouds_network), "_data_raw.csv"))
+    write_csv(x = metadata_raw, file = paste0(tabular_data_output_path, "/", str_to_lower(temp_clouds_network), "_metadata_raw.csv"))
     
     # print status
-    print(paste0("exported ", temp_ncsco_network, " network data"))
+    print(paste0("exported ", temp_clouds_network, " network data"))
   }
 
   # print message that there's no data
   else {
     # print status
-    print(paste0("did not export ", temp_ncsco_network, " network data"))
+    print(paste0("did not export ", temp_clouds_network, " network data"))
   }
 }
 

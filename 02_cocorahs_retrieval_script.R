@@ -11,20 +11,24 @@
  
 
 # ---- to do ----
-# to do list
+# to do list:
 
 
 # ---- 1. load libraries and set paths----
 library(tidyverse)
 library(xml2)
 library(lubridate)
+library(here)
+library(tidylog)
+
+# to install xml2
 # devtools::install_github("r-lib/xml2")
 # https://github.com/r-lib/xml2
 # helpful blog: https://blog.rstudio.com/2015/04/21/xml2/
 # more helpful blog: https://lecy.github.io/Open-Data-for-Nonprofit-Research/Quick_Guide_to_XML_in_R.html
 
-# paths
-tabular_data_export_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/cocorahs_raw/"
+# set tabular data export path
+tabular_data_output_path <- here::here("data", "tabular", "obs_precip_raw")
 
 
 # ---- 2. loop through data ----
@@ -33,7 +37,7 @@ tabular_data_export_path <- "/Users/sheila/Documents/bae_shellcast_project/shell
 # start_date <- ymd("2016-01-01")
 # end_date <- ymd("2018-12-31")
 start_date <- ymd("2015-01-01")
-# end_date <- ymd("2015-01-07") # testing
+# end_date <- ymd("2015-01-03") # testing
 end_date <- ymd("2016-12-31")
 day_step <- duration(num = 1, units = "days")
 num_days <- time_length(end_date - start_date, unit = "days")
@@ -107,9 +111,44 @@ cocorahs_data_raw_fin <- cocorahs_data_raw %>%
   arrange(datetime_et)
 
 
+# ---- 4. separate out metadata (to combine with clouds api data) ----
+cocorahs_metadata <- cocorahs_data_raw_fin %>%
+  # change column names so they are compatible with NC SCO API outputs
+  select(location_id = station_id, location_id_code = station_id, location_name = station_name, latitude_degrees_north = lat, longitude_degrees_east = long) %>%
+  distinct_all() %>%
+  # add columns so this is compatible with NC SCO API outputs
+  mutate(network_type = "CoCoRaHS",
+         city = NA, 
+         county = NA, 
+         state = "NC", 
+         elevation_feet = NA, 
+         supporting_agency_for_location = "CoCoRaHS",
+         start_date = NA,
+         end_date = NA,
+         obtypes_available = NA) %>%
+  select(location_id, location_id_code, network_type, location_name,city:state, latitude_degrees_north, longitude_degrees_east, elevation_feet:obtypes_available)
+
+
+# ---- 5. separate out data (to combine with clouds api data) ----
+cocorahs_data <- cocorahs_data_raw_fin %>%
+  select(location_id = station_id, datetime_et, precip_in) %>%
+  # add columns so this is compatible with NC SCO API outputs
+  mutate(var = "precip",
+         value = precip_in,
+         unit = "in",
+         score = NA,
+         nettype = NA,
+         vartype = NA,
+         obtime = NA,
+         obtype = NA,
+         obnum = NA,
+         value_accum = NA) %>%
+  select(location_id, datetime_et, var:value_accum)
+
+
 # ---- 3. export data ----
 # export to csv
-write_csv(x = cocorahs_data_raw_fin, path = paste0(tabular_data_export_path, "cocorahs_data_raw.csv"))
-
+write_csv(x = cocorahs_data, path = paste0(tabular_data_output_path, "/cocorahs_data_raw.csv"))
+write_csv(x = cocorahs_metadata, path = paste0(tabular_data_output_path, "/cocorahs_metadata_raw.csv"))
 
 
