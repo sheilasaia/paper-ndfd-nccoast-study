@@ -27,8 +27,8 @@ library(tidylog)
 # helpful blog: https://blog.rstudio.com/2015/04/21/xml2/
 # more helpful blog: https://lecy.github.io/Open-Data-for-Nonprofit-Research/Quick_Guide_to_XML_in_R.html
 
-# set tabular data export path
-tabular_data_output_path <- here::here("data", "tabular", "obs_precip_raw")
+# tabular data output path
+tabular_data_output_path <- here::here("data", "tabular", "obs_data_raw")
 
 
 # ---- 2. loop through data ----

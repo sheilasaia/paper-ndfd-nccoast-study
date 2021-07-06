@@ -25,10 +25,10 @@ library(here)
 
 
 # ---- 2. define paths and projections ----
-# observed (historic) precip tabular data path
+# tabular data input path
 tabular_data_input_path <- here::here("data", "tabular", "obs_data_tidy")
 
-# observed (historic) precip spatial data path
+# spatial data output path
 spatial_data_output_path <- here::here("data", "spatial", "obs_data_tidy")
 
 # define epsg for wgs 84

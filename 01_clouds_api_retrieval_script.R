@@ -90,8 +90,8 @@ library(tidylog)
 
 
 # ---- 2. set keys and paths ----
-# set tabular data export path
-tabular_data_output_path <- here::here("data", "tabular", "obs_precip_raw")
+# tabular data output path
+tabular_data_output_path <- here::here("data", "tabular", "obs_data_raw")
 
 # get sco clouds api key (need to request this from the nc sco)
 CLOUDS_API_KEY <- Sys.getenv("CLOUDS_API_KEY")

@@ -14,11 +14,11 @@ from pydap.client import open_url # to convert bin file
 import requests # to check if website exists
 from csv import writer
 
-def aggregate_sco_ndfd_var_data(ndfd_var_data, var_period_index, var_period_vals, ndfd_var) :
+def aggregate_ndfd_var_data(ndfd_var_data, var_period_index, var_period_vals, ndfd_var) :
     """
     Description: Returns a tidy dataframe of qpf SCO NDFD data for a specified date
     Parameters:
-        ndfd_var_data (pydap Dataset): Pydap dataset object for specified datetime, from get_sco_ndfd_data() function and need to select a specific variable within this raw dataset
+        ndfd_var_data (pydap Dataset): Pydap dataset object for specified datetime, from get_ndfd_data() function and need to select a specific variable within this raw dataset
         var_period_index (integer): Integer value that represents where in ndfd_var_data the subperiod of interest is (e.g. 6 hr, 12hr)
         var_period_vals (array): An array of subperiod values (e.g., 6hr, 12hr) for the full period of interest (e.g., 24hr)
         ndfd_var (str): either "qpf" or "pop12", the SCO NDFD variable of interest
@@ -26,7 +26,7 @@ def aggregate_sco_ndfd_var_data(ndfd_var_data, var_period_index, var_period_vals
         var_agg_data_pd (data frame): A pandas dataframe with variable data aggregated to the full period of interest (e.g., 24hr)
       Required:
         import pandas
-        ndfd_var_data requires loading and running convert_sco_ndfd_datetime_str() and get_sco_ndfd_data() functions before this
+        ndfd_var_data requires loading and running convert_ndfd_datetime_str() and get_ndfd_data() functions before this
     Source: none, custom function
 
     Note: Subperiods and periods are described as follows. For example, qpf data is reported in subperiods of 6 hours so to calculate qpf for 24 hours, you will have to sum 6, 12, 18, and 24 hour subperiods to get a full 24 hour period.
@@ -84,7 +84,7 @@ def append_list_as_row(file_name, list_of_elem):
         csv_writer.writerow(list_of_elem)
 
 
-def convert_sco_ndfd_datetime_str(datetime_str):
+def convert_ndfd_datetime_str(datetime_str):
     """
     Description: takes string of format "%Y-%m-%d %H:%M" and converts it to the "%Y%m%d%H", "%Y%m%d", and "%Y%m" formats
     Parameters:
@@ -109,7 +109,7 @@ def convert_sco_ndfd_datetime_str(datetime_str):
     return datetime_ym_str, datetime_ymd_str, datetime_ymdh_str
 
 
-def get_sco_ndfd_data(base_server_url, datetime_uct_str):
+def get_ndfd_data(base_server_url, datetime_uct_str):
     """
     Description: returns a dataframe of NC State Climate office (SCO) National Digital Forecast Dataset (NDFD) data for a specified datetime, if url does not exist then will give empty dataset
     Parameters:
@@ -121,11 +121,11 @@ def get_sco_ndfd_data(base_server_url, datetime_uct_str):
     Required:
         import open_url from pydap.client
         import requests
-        must load and run convert_sco_ndfd_datetime_str() function
+        must load and run convert_ndfd_datetime_str() function
     Source: none, custom function
     """
     # convert datetime string
-    year_month, year_month_day, year_month_day_hour = convert_sco_ndfd_datetime_str(datetime_uct_str)
+    year_month, year_month_day, year_month_day_hour = convert_ndfd_datetime_str(datetime_uct_str)
 
     # define data url
     date_str_url = year_month + "/" + year_month_day + "/" + year_month_day_hour
@@ -151,7 +151,7 @@ def get_var_col_name(ndfd_data, ndfd_var):
     """
     Description: returns the full column name of the variable of interest and SCO NDFD dataset of interest
     Parameters:
-        ndfd_data (pydap Dataset): Pydap dataset object for specified datetime, from get_sco_ndfd_data() function
+        ndfd_data (pydap Dataset): Pydap dataset object for specified datetime, from get_ndfd_data() function
         ndfd_var (str): either "qpf" or "pop12", the SCO NDFD variable of interest
     Returns:
         var_col_name (str): A string with the full SCO NDFD variable column name means data is available)
@@ -189,24 +189,24 @@ def get_var_col_name(ndfd_data, ndfd_var):
     return var_col_name[0]
     
 
-def tidy_sco_ndfd_data(ndfd_data, datetime_uct_str, ndfd_var):
+def tidy_ndfd_data(ndfd_data, datetime_uct_str, ndfd_var):
     """
     Description: Returns a tidy dataframe of qpf SCO NDFD data for a specified date
     Parameters:
-        ndfd_data (pydap Dataset): Pydap dataset object for specified datetime, from get_sco_ndfd_data() function
+        ndfd_data (pydap Dataset): Pydap dataset object for specified datetime, from get_ndfd_data() function
         datetime_uct_str (str): A string in "%Y-%m-%d %H:%M" format (e.g., "2016-01-01 00:00") with timezone = UCT
         ndfd_var (str): either "qpf" or "pop12", the SCO NDFD variable of interest
     Returns:
         var_data_pd (data frame): A pandas dataframe with SCO NDFD variable data
         datetime_ymdh_str (str): A string in "%Y%m%d%H" format (e.g, "2016010100")
     Required:
-        import numpy, import pandas, import datatime, must load and run convert_sco_ndfd_datetime_str(), get_sco_ndfd_data(), and aggregate_sco_ndfd_var_data() functions before this
+        import numpy, import pandas, import datatime, must load and run convert_ndfd_datetime_str(), get_ndfd_data(), and aggregate_ndfd_var_data() functions before this
     Source: none, custom function
     """
     # ndfd_data.values # to see all possible variables
 
     # convert datetime str so can append to file name
-    datetime_ym, datetime_ymd_str, datetime_ymdh_str = convert_sco_ndfd_datetime_str(datetime_uct_str)
+    datetime_ym, datetime_ymd_str, datetime_ymdh_str = convert_ndfd_datetime_str(datetime_uct_str)
 
     # if data exists
     if (len(ndfd_data) > 0):
@@ -259,9 +259,9 @@ def tidy_sco_ndfd_data(ndfd_data, datetime_uct_str, ndfd_var):
                     var_72hr_index = numpy.where(numpy.isin(var_times_sel, var_72hr_vals))[0] # 3-day forecast
 
                     # aggregate qpf data
-                    var_24hr_pd_raw = aggregate_sco_ndfd_var_data(var_data, var_24hr_index, var_24hr_vals, ndfd_var)
-                    var_48hr_pd_raw = aggregate_sco_ndfd_var_data(var_data, var_48hr_index, var_48hr_vals, ndfd_var)
-                    var_72hr_pd_raw = aggregate_sco_ndfd_var_data(var_data, var_72hr_index, var_72hr_vals, ndfd_var)
+                    var_24hr_pd_raw = aggregate_ndfd_var_data(var_data, var_24hr_index, var_24hr_vals, ndfd_var)
+                    var_48hr_pd_raw = aggregate_ndfd_var_data(var_data, var_48hr_index, var_48hr_vals, ndfd_var)
+                    var_72hr_pd_raw = aggregate_ndfd_var_data(var_data, var_72hr_index, var_72hr_vals, ndfd_var)
 
                     # add valid period column
                     var_24hr_pd_raw['valid_period_hrs'] = numpy.repeat("24", len(var_24hr_pd_raw), axis=0)
@@ -363,9 +363,9 @@ def tidy_sco_ndfd_data(ndfd_data, datetime_uct_str, ndfd_var):
                     var_72hr_index = numpy.where(numpy.isin(var_times_sel, var_72hr_vals))[0] # 3-day forecast
 
                     # aggregate qpf data
-                    var_24hr_pd_raw = aggregate_sco_ndfd_var_data(var_data, var_24hr_index, var_24hr_vals, ndfd_var)
-                    var_48hr_pd_raw = aggregate_sco_ndfd_var_data(var_data, var_48hr_index, var_48hr_vals, ndfd_var)
-                    var_72hr_pd_raw = aggregate_sco_ndfd_var_data(var_data, var_72hr_index, var_72hr_vals, ndfd_var)
+                    var_24hr_pd_raw = aggregate_ndfd_var_data(var_data, var_24hr_index, var_24hr_vals, ndfd_var)
+                    var_48hr_pd_raw = aggregate_ndfd_var_data(var_data, var_48hr_index, var_48hr_vals, ndfd_var)
+                    var_72hr_pd_raw = aggregate_ndfd_var_data(var_data, var_72hr_index, var_72hr_vals, ndfd_var)
 
                     # add valid period column
                     var_24hr_pd_raw['valid_period_hrs'] = numpy.repeat("24", len(var_24hr_pd_raw), axis=0)

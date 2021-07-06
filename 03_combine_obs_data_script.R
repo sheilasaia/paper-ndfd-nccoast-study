@@ -23,11 +23,11 @@ library(here)
 
 
 # ---- 2. define paths ----
-# tabular raw data path
-tabular_data_input_path <- here::here("data", "tabular", "obs_precip_raw")
+# tabular data input path
+tabular_data_input_path <- here::here("data", "tabular", "obs_data_raw")
 
-# output path
-tabular_data_output_path <- here::here("data", "tabular", "obs_precip_tidy")
+# tabular data output path
+tabular_data_output_path <- here::here("data", "tabular", "obs_data_tidy")
 
 
 # ---- 3. load data ----
