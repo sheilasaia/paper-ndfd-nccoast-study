@@ -27,14 +27,17 @@ library(lubridate)
 
 
 # ---- 2. define base paths ----
-# path to ndfd tabular inputs
-ndfd_sco_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/ndfd_sco_hist_raw/"
+# set project path
+project_path = "/Users/ssaia/Documents/github/paper-ndfd-nccoast-study/"
 
-# path to nc buffer spatial inputs
-nc_buffer_spatial_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/region_state_bounds/"
+# tabular data input path
+tabular_data_input_path = project_path + "data/tabular/ndfd_data_raw/"
 
-# path to ndfd spatial outputs
-ndfd_sco_spatial_data_output_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/ndfd_sco_hist/"
+# spatial data input path
+spatial_data_input_path = project_path + "data/spatial/region_state_bounds_tidy/"
+
+# spatial data output path
+spatial_data_output_path = project_path + "data/spatial/ndfd_data_tidy/"
 
 
 # ---- 3. define projections ----
@@ -57,16 +60,17 @@ conus_albers_epsg <- 5070
 
 # ---- 4. load data ----
 # data available
-data_available <- read_csv(paste0(ndfd_sco_tabular_data_input_path, "data_available.csv"), col_names = TRUE)
+data_available <- read_csv(file = paste0(tabular_data_input_path, "data_available.csv"), 
+                           col_names = TRUE)
 
 # nc buffer bounds
-nc_buffer_albers <- st_read(paste0(nc_buffer_spatial_input_path, "nc_bounds_10kmbuf_albers.shp"))
+nc_buffer_albers <- st_read(paste0(spatial_data_input_path, "nc_bounds_10kmbuf_albers.shp"))
 
 
 # ---- 5. loop ----
 
 # files available
-file_list <- list.files(path = ndfd_sco_tabular_data_input_path)
+file_list <- list.files(path = tabular_data_input_path)
 
 # read in data that's available
 for (i in 1:dim(data_available)[1]) {
@@ -88,20 +92,34 @@ for (i in 1:dim(data_available)[1]) {
     temp_qpf_file_name <- temp_files[grep(pattern = "qpf", x = temp_files)]
     
     # load in tabular data
-    temp_ndfd_pop12_data_raw <- read_csv(paste0(ndfd_sco_tabular_data_input_path, temp_pop12_file_name),
+    temp_ndfd_pop12_data_raw <- read_csv(paste0(tabular_data_input_path, temp_pop12_file_name),
                                          col_types = list(col_double(), col_double(), col_double(), col_double(), col_double(), col_double(), col_double(),
                                                           col_character(), col_character(), col_character(), col_character(), col_character()))
-    temp_ndfd_qpf_data_raw <- read_csv(paste0(ndfd_sco_tabular_data_input_path, temp_qpf_file_name),
+    temp_ndfd_qpf_data_raw <- read_csv(paste0(tabular_data_input_path, temp_qpf_file_name),
                                        col_types = list(col_double(), col_double(), col_double(), col_double(), col_double(), col_double(), col_double(),
                                                         col_character(), col_character(), col_character(), col_character(), col_character()))
     
     # initial clean up
     temp_ndfd_pop12_data <- temp_ndfd_pop12_data_raw %>%
-      dplyr::select(x_index, y_index, latitude_km, longitude_km, time_uct, time_nyc, pop12_value_perc, valid_period_hrs) %>%
+      dplyr::select(x_index, 
+                    y_index, 
+                    latitude_km, 
+                    longitude_km, 
+                    time_uct, 
+                    time_nyc, 
+                    pop12_value_perc, 
+                    valid_period_hrs) %>%
       dplyr::mutate(latitude_m = latitude_km * 1000,
                     longitude_m = longitude_km * 1000)
     temp_ndfd_qpf_data <- temp_ndfd_qpf_data_raw %>%
-      dplyr::select(x_index, y_index, latitude_km, longitude_km, time_uct, time_nyc, qpf_value_kgperm2, valid_period_hrs) %>%
+      dplyr::select(x_index, 
+                    y_index, 
+                    latitude_km, 
+                    longitude_km, 
+                    time_uct, 
+                    time_nyc, 
+                    qpf_value_kgperm2, 
+                    valid_period_hrs) %>%
       dplyr::mutate(latitude_m = latitude_km * 1000,
                     longitude_m = longitude_km * 1000,
                     qpf_value_in = qpf_value_kgperm2 * (1/1000) * (100) * (1/2.54)) # convert to m (density of water is 1000 kg/m3) then cm then inches
@@ -146,9 +164,9 @@ for (i in 1:dim(data_available)[1]) {
     
     # make empty raster for 1-day, 2-day, and 3-day forecasts
     temp_ndfd_pop12_grid_1day <- raster(ncol = length(unique(temp_ndfd_pop12_albers_1day$longitude_km)),
-                                   nrows = length(unique(temp_ndfd_pop12_albers_1day$latitude_km)),
-                                   crs = conus_albers_proj,
-                                   ext = extent(temp_ndfd_pop12_albers_1day))
+                                        nrows = length(unique(temp_ndfd_pop12_albers_1day$latitude_km)),
+                                        crs = conus_albers_proj,
+                                        ext = extent(temp_ndfd_pop12_albers_1day))
     temp_ndfd_pop12_grid_2day <- raster(ncol = length(unique(temp_ndfd_pop12_albers_2day$longitude_km)),
                                    nrows = length(unique(temp_ndfd_pop12_albers_2day$latitude_km)),
                                    crs = conus_albers_proj,
@@ -206,12 +224,12 @@ for (i in 1:dim(data_available)[1]) {
     # plot(temp_ndfd_qpf_raster_3day_nc_albers)
     
     # export rasters for 1-day, 2-day, and 3-day forecasts
-    writeRaster(temp_ndfd_pop12_raster_1day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "pop12_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_pop12_raster_2day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "pop12_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_pop12_raster_3day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "pop12_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_qpf_raster_1day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "qpf_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_qpf_raster_2day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "qpf_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_qpf_raster_3day_nc_albers, paste0(ndfd_sco_spatial_data_output_path, "qpf_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_pop12_raster_1day_nc_albers, paste0(spatial_data_output_path, "pop12_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_pop12_raster_2day_nc_albers, paste0(spatial_data_output_path, "pop12_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_pop12_raster_3day_nc_albers, paste0(spatial_data_output_path, "pop12_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_1day_nc_albers, paste0(spatial_data_output_path, "qpf_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_2day_nc_albers, paste0(spatial_data_output_path, "qpf_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_3day_nc_albers, paste0(spatial_data_output_path, "qpf_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
     
     # print status
     print(paste0("finished converting df to raster for ", temp_date_str))
@@ -222,6 +240,3 @@ for (i in 1:dim(data_available)[1]) {
     next
   }
 }
-
-
-

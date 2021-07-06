@@ -37,13 +37,13 @@ from csv import writer
 # %% set paths
 
 # set project path
-project_path = "/Users/sheila/Documents/github/paper-ndfd-nccoast-study/functions/"
+project_path = "/Users/ssaia/Documents/github/paper-ndfd-nccoast-study/"
 
-# define data directory path (for export)
-data_dir_path = '/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/ndfd_sco_hist_raw/'
+# function path
+function_path = project_path + "functions/"
 
-# definie analysis directory (separate from data for now)
-analysis_dir_path = '/Users/sheila/Documents/github/paper-ndfd-nccoast-study/'
+# tabular data output path
+tabular_data_output_path = project_path + "data/tabular/ndfd_data_raw/"
 
 
 # %% set anchor to project and load custom functions
@@ -51,7 +51,7 @@ analysis_dir_path = '/Users/sheila/Documents/github/paper-ndfd-nccoast-study/'
 sys.path.insert(0, project_path)
 
 # import custom functions
-from functions import aggregate_sco_ndfd_var_data, append_list_as_row, convert_sco_ndfd_datetime_str, get_sco_ndfd_data, get_var_col_name, tidy_sco_ndfd_data # see functions.py file
+from functions import aggregate_ndfd_var_data, append_list_as_row, convert_ndfd_datetime_str, get_ndfd_data, get_var_col_name, tidy_ndfd_data # see functions.py file
 
 
 # %% test functions
@@ -64,35 +64,35 @@ test_datetime_uct_str = "2015-01-02 00:00"
 #test_datetime_uct_str = "2017-05-23 00:00" # this one has some data (pop12) but not others (qpf)
 
 # test function
-test_ym_str, test_ymd_str, test_ymdh_str = convert_sco_ndfd_datetime_str(datetime_str = test_datetime_uct_str)
+test_ym_str, test_ymd_str, test_ymdh_str = convert_ndfd_datetime_str(datetime_str = test_datetime_uct_str)
 
 test_ym_str
 test_ymd_str
 test_ymdh_str
 
 # define serve path
-ndfd_sco_server_url = 'https://tds.climate.ncsu.edu/thredds/dodsC/nws/ndfd/'
+sco_server_url = 'https://tds.climate.ncsu.edu/thredds/dodsC/nws/ndfd/'
 # this is the server path for historic ndfd forecasts
 # to see the catalog website: https://tds.climate.ncsu.edu/thredds/catalog/nws/ndfd/catalog.html
 
 # get data
-test_data = get_sco_ndfd_data(base_server_url = ndfd_sco_server_url, datetime_uct_str = test_datetime_uct_str)
-#test_data, test_url_status, test_url = get_sco_ndfd_data(base_server_url = ndfd_sco_server_url, datetime_uct_str = test_datetime_uct_str)
+test_data = get_ndfd_data(base_server_url = sco_server_url, datetime_uct_str = test_datetime_uct_str)
+#test_data, test_url_status, test_url = get_ndfd_data(base_server_url = sco_server_url, datetime_uct_str = test_datetime_uct_str)
 
 # tidy qpf data
-test_qpf_data_pd, test_qpf_datetime_ymdh_str = tidy_sco_ndfd_data(ndfd_data = test_data, datetime_uct_str = test_datetime_uct_str, ndfd_var = "qpf")
+test_qpf_data_pd, test_qpf_datetime_ymdh_str = tidy_ndfd_data(ndfd_data = test_data, datetime_uct_str = test_datetime_uct_str, ndfd_var = "qpf")
 
 test_qpf_data_pd
 test_qpf_datetime_ymdh_str
 
 # tidy pop12 data
-test_pop12_data_pd, test_pop12_datetime_ymdh_str = tidy_sco_ndfd_data(ndfd_data = test_data, datetime_uct_str = test_datetime_uct_str, ndfd_var = "pop12")
+test_pop12_data_pd, test_pop12_datetime_ymdh_str = tidy_ndfd_data(ndfd_data = test_data, datetime_uct_str = test_datetime_uct_str, ndfd_var = "pop12")
 
 test_pop12_data_pd
 test_pop12_datetime_ymdh_str
 
 # test non-valid ndfd_var option
-#tidy_sco_ndfd_data(ndfd_data = test_data, datetime_uct_str = test_datetime_uct_str, ndfd_var = "qff")
+#tidy_ndfd_data(ndfd_data = test_data, datetime_uct_str = test_datetime_uct_str, ndfd_var = "qff")
 
 # %% generate datetime dataset for looping
 
@@ -119,7 +119,7 @@ datetime_list_pd = pandas.DataFrame(datetime_list, columns = {'datetime_uct_str'
 # %% loop variables
 
 # define serve path
-ndfd_sco_server_url = 'https://tds.climate.ncsu.edu/thredds/dodsC/nws/ndfd/'
+sco_server_url = 'https://tds.climate.ncsu.edu/thredds/dodsC/nws/ndfd/'
 # this is the server path for historic ndfd forecasts
 # to see the catalog website: https://tds.climate.ncsu.edu/thredds/catalog/nws/ndfd/catalog.html
 
@@ -140,13 +140,13 @@ for date in range(0, len(datetime_list_pd)):
     temp_datetime_uct_str = datetime_list_pd['datetime_uct_str'][date]
 
     # get data
-    temp_data = get_sco_ndfd_data(base_server_url = ndfd_sco_server_url, datetime_uct_str = temp_datetime_uct_str)
+    temp_data = get_ndfd_data(base_server_url = sco_server_url, datetime_uct_str = temp_datetime_uct_str)
 
     # only append data when it exists
     if (len(temp_data) > 0):
         # tidy qpf and pop12 data
-        temp_qpf_data_pd, temp_qpf_datetime_ymdh_str = tidy_sco_ndfd_data(ndfd_data = temp_data, datetime_uct_str = temp_datetime_uct_str, ndfd_var = "qpf")
-        temp_pop12_data_pd, temp_pop12_datetime_ymdh_str = tidy_sco_ndfd_data(ndfd_data = temp_data, datetime_uct_str = temp_datetime_uct_str, ndfd_var = "pop12")
+        temp_qpf_data_pd, temp_qpf_datetime_ymdh_str = tidy_ndfd_data(ndfd_data = temp_data, datetime_uct_str = temp_datetime_uct_str, ndfd_var = "qpf")
+        temp_pop12_data_pd, temp_pop12_datetime_ymdh_str = tidy_ndfd_data(ndfd_data = temp_data, datetime_uct_str = temp_datetime_uct_str, ndfd_var = "pop12")
 
         # check if desired times were available, only keep when we have both
         if ((len(temp_qpf_data_pd) > 0) and (len(temp_pop12_data_pd) > 0)):
@@ -155,9 +155,9 @@ for date in range(0, len(datetime_list_pd)):
             # pop12_data_pd = pop12_data_pd.append(temp_pop12_data_pd, ignore_index = True)
 
             # define export path
-            temp_datetime_ymdh_str = convert_sco_ndfd_datetime_str(temp_datetime_uct_str)[2]
-            temp_qpf_data_path = data_dir_path + "qpf_" + temp_datetime_ymdh_str +  ".csv" # data_dir_path definited at top of script
-            temp_pop12_data_path = data_dir_path + "pop12_" + temp_datetime_ymdh_str + ".csv" # data_dir_path definited at top of script
+            temp_datetime_ymdh_str = convert_ndfd_datetime_str(temp_datetime_uct_str)[2]
+            temp_qpf_data_path = tabular_data_output_path + "qpf_" + temp_datetime_ymdh_str +  ".csv" # tabular_data_output_path definited at top of script
+            temp_pop12_data_path = tabular_data_output_path + "pop12_" + temp_datetime_ymdh_str + ".csv" # tabular_data_output_path definited at top of script
 
             # export results
             temp_qpf_data_pd.to_csv(temp_qpf_data_path, index = False)
@@ -189,19 +189,19 @@ for date in range(0, len(datetime_list_pd)):
 
 # %%
 # define qpf and pop12 data export paths
-# qpf_data_path = data_dir_path + "qpf" + "_.csv" # data_dir_path definited at top of script
-# pop12_data_path = data_dir_path + "pop12" + "_data.csv" # data_dir_path definited at top of script
+# qpf_data_path = tabular_data_output_path + "qpf" + "_.csv" # tabular_data_output_path definited at top of script
+# pop12_data_path = tabular_data_output_path + "pop12" + "_data.csv" # tabular_data_output_path definited at top of script
 
 # export qpf and pop12 data
 # qpf_data_pd.to_csv(qpf_data_path, index = False)
 # pop12_data_pd.to_csv(pop12_data_path, index = False)
 
 # export data availability
-data_availability_path = data_dir_path + "data_available.csv"
+data_availability_path = tabular_data_output_path + "data_available.csv"
 data_available_pd.to_csv(data_availability_path, index = False)
 
 # export datetime dataframe
-datetime_pd_path = data_dir_path + "datetime_list_pd.csv"
+datetime_pd_path = tabular_data_output_path + "datetime_list_pd.csv"
 datetime_list_pd.to_csv(datetime_pd_path, index = False)
 
 # it works! :)
@@ -213,11 +213,11 @@ datetime_list_pd.to_csv(datetime_pd_path, index = False)
 
 #test_datetime_uct_str = "2016-01-01 22:00"
 #
-#test_ym_str, test_ymd_str, test_ymdh_str = convert_sco_ndfd_datetime_str(datetime_str = test_datetime_uct_str)
+#test_ym_str, test_ymd_str, test_ymdh_str = convert_ndfd_datetime_str(datetime_str = test_datetime_uct_str)
 #
-#ndfd_sco_server_url = 'https://tds.climate.ncsu.edu/thredds/dodsC/nws/ndfd/'
+#sco_server_url = 'https://tds.climate.ncsu.edu/thredds/dodsC/nws/ndfd/'
 #
-#test_data = get_sco_ndfd_data(base_server_url = ndfd_sco_server_url, datetime_uct_str = test_datetime_uct_str)
+#test_data = get_ndfd_data(base_server_url = sco_server_url, datetime_uct_str = test_datetime_uct_str)
 #
 #ndfd_data = test_data
 #
