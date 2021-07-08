@@ -13,10 +13,8 @@
 # ---- to do ----
 # to do list
 
-# TODO (wishlist) use here package
 # TODO (wishlist) use terra package for raster stuff
 # TODO add versions of packages used, version of R used
-# TODO reorganize data
 
 
 # ---- 1. load packages as necessary ----
@@ -24,20 +22,19 @@ library(tidyverse)
 library(raster)
 library(sf)
 library(lubridate)
+library(here)
+library(tidylog)
 
 
 # ---- 2. define base paths ----
-# set project path
-project_path = "/Users/ssaia/Documents/github/paper-ndfd-nccoast-study/"
-
 # tabular data input path
-tabular_data_input_path = project_path + "data/tabular/ndfd_data_raw/"
+tabular_data_input_path = here::here("data", "tabular", "ndfd_data_raw")
 
 # spatial data input path
-spatial_data_input_path = project_path + "data/spatial/region_state_bounds_tidy/"
+spatial_data_input_path = here::here("data", "spatial", "region_state_bounds_tidy")
 
 # spatial data output path
-spatial_data_output_path = project_path + "data/spatial/ndfd_data_tidy/"
+spatial_data_output_path = here::here("data", "spatial", "ndfd_data_tidy")
 
 
 # ---- 3. define projections ----
@@ -57,14 +54,16 @@ conus_albers_epsg <- 5070
 # wgs84_epsg <- 4326
 # wgs84_proj4 <- "+proj=longlat +datum=WGS84 +no_defs"
 
+# crs <- rgdal::make_EPSG()
+
 
 # ---- 4. load data ----
 # data available
-data_available <- read_csv(file = paste0(tabular_data_input_path, "data_available.csv"), 
+data_available <- read_csv(file = paste0(tabular_data_input_path, "/data_available.csv"), 
                            col_names = TRUE)
 
 # nc buffer bounds
-nc_buffer_albers <- st_read(paste0(spatial_data_input_path, "nc_bounds_10kmbuf_albers.shp"))
+nc_buffer_albers <- st_read(paste0(spatial_data_input_path, "/nc_bounds_10kmbuf_albers.shp"))
 
 
 # ---- 5. loop ----
@@ -224,12 +223,12 @@ for (i in 1:dim(data_available)[1]) {
     # plot(temp_ndfd_qpf_raster_3day_nc_albers)
     
     # export rasters for 1-day, 2-day, and 3-day forecasts
-    writeRaster(temp_ndfd_pop12_raster_1day_nc_albers, paste0(spatial_data_output_path, "pop12_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_pop12_raster_2day_nc_albers, paste0(spatial_data_output_path, "pop12_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_pop12_raster_3day_nc_albers, paste0(spatial_data_output_path, "pop12_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_qpf_raster_1day_nc_albers, paste0(spatial_data_output_path, "qpf_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_qpf_raster_2day_nc_albers, paste0(spatial_data_output_path, "qpf_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
-    writeRaster(temp_ndfd_qpf_raster_3day_nc_albers, paste0(spatial_data_output_path, "qpf_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_pop12_raster_1day_nc_albers, paste0(spatial_data_output_path, "/pop12_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_pop12_raster_2day_nc_albers, paste0(spatial_data_output_path, "/pop12_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_pop12_raster_3day_nc_albers, paste0(spatial_data_output_path, "/pop12_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_1day_nc_albers, paste0(spatial_data_output_path, "/qpf_24hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_2day_nc_albers, paste0(spatial_data_output_path, "/qpf_48hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
+    writeRaster(temp_ndfd_qpf_raster_3day_nc_albers, paste0(spatial_data_output_path, "/qpf_72hr_nc_albers_", temp_date_str, ".tif"), overwrite = TRUE)
     
     # print status
     print(paste0("finished converting df to raster for ", temp_date_str))
