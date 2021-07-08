@@ -25,7 +25,8 @@ library(lubridate)
 library(sf)
 library(caret)
 library(broom)
-
+library(here)
+library(tidylog)
 
 
 # ---- 2. define paths and projections ----
@@ -36,7 +37,7 @@ hist_precip_spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_pr
 hist_precip_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/hist_precip_data/"
 
 # path to ndfd tabular data
-ndfd_sco_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/ndfd_sco_hist/"
+ndfd_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/sheila_generated/ndfd_sco_hist/"
 
 # path to figure
 figure_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/results/agu_2020/figures/"
@@ -56,7 +57,7 @@ hist_precip_metadata_county_based_coast_albers <- st_read(paste0(hist_precip_spa
 hist_precip_data <- read_csv(paste0(hist_precip_tabular_data_input_path, "hist_precip_data_compiled.csv"))
 
 # ndfd data (county based)
-ndfd_calcs_county_based_data <- read_csv(paste0(ndfd_sco_tabular_data_input_path, "ndfd_calcs_county_based_data.csv"))
+ndfd_calcs_county_based_data <- read_csv(paste0(ndfd_tabular_data_input_path, "ndfd_calcs_county_based_data.csv"))
 
 # ndfd data (ws based)
 
