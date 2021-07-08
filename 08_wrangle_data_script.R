@@ -1,6 +1,6 @@
 # ---- script header ----
-# script name: roc_wrangle_data_script.R
-# purpose of script: get and wrangle data required for roc analysis
+# script name: wrangle_data_script.R
+# purpose of script: get and wrangle data required for analysis
 # author: sheila saia
 # date created: 20210408
 # email: ssaia@ncsu.edu
@@ -13,71 +13,93 @@
 # ---- to do ----
 # to do list
 
+# TODO need to add in cmu, lease, and other tidy data scripts before this one
+# TODO remove mention of roc here for now
 
 # ---- 1. load libraries ----
 library(tidyverse)
 library(sf)
+library(raster)
 library(here)
 library(tidylog)
 library(lubridate)
 
 
 # ---- 2. define paths ----
-# data path (for now --> use here package later)
-data_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/"
-
 # path to ndfd tabular inputs
-ndfd_sco_tabular_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/tabular/ndfd_sco_hist_raw/"
+ndfd_tabular_data_input_path <- here::here("data", "tabular", "ndfd_data_raw")
+
+# path to ndfd tabular outputs
+ndfd_tabular_data_output_path <- here::here("data", "tabular", "ndfd_data_tidy")
 
 # path to ndfd spatial inputs
-ndfd_sco_spatial_data_input_path <- "/Users/sheila/Documents/bae_shellcast_project/shellcast_analysis/data/spatial/sheila_generated/ndfd_sco_hist/"
+ndfd_spatial_data_input_path <- here::here("data", "spatial", "ndfd_data_tidy")
+
+# path to ncdmf tabular inputs
+ncdmf_tabular_data_input_path <- here::here("data", "tabular", "ncdmf_data_tidy")
+
+# path to ncdfm spatial inputs
+ncdmf_spatial_data_input_path <- here::here("data", "spatial", "ncdmf_data_tidy")
+
+# path to ncdfm spatial inputs
+ncdmf_spatial_data_output_path <- here::here("data", "spatial", "ncdmf_data_tidy")
+
+# path to observed spatial inputs
+obs_spatial_data_input_path <- here::here("data", "spatial", "obs_data_tidy")
+
+# path to observed spatial outputs
+obs_spatial_data_output_path <- here::here("data", "spatial", "obs_data_tidy")
+
+
 
 
 # ---- 3. load data ----
 # import cmu bounds (spatial)
-cmu_bounds_albers <- st_read(paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_albers.shp"))
+cmu_bounds_albers <- st_read(paste0(ncdmf_spatial_data_input_path, "/cmu_bounds_albers.shp"))
 
 # import lease centroids (spatial)
-lease_centroids_albers <- st_read(paste0(data_path, "spatial/sheila_generated/lease_bounds/lease_centroids_albers.shp"))
+lease_centroids_albers <- st_read(paste0(ncdmf_spatial_data_input_path, "/lease_centroids_albers.shp"))
 
 # import historic precip metadata (spatial)
-hist_precip_metadata_albers <- st_read(paste0(data_path, "spatial/sheila_generated/hist_precip_data/hist_precip_metadata_albers.shp"))
+obs_metadata_albers <- st_read(paste0(obs_spatial_data_input_path, "/obs_metadata_albers.shp"))
 
 # cmu information (tabular)
-cmu_sga_key <- read_csv(file = paste0(data_path, "tabular/sheila_generated/ncdmf_rainfall_thresholds/cmu_sga_key.csv"), col_names = TRUE)
+cmu_sga_key <- read_csv(file = paste0(ncdmf_tabular_data_input_path, "/cmu_sga_key.csv"), col_names = TRUE)
 
 # sga information (tabular)
-sga_key <- read_csv(file = paste0(data_path, "tabular/sheila_generated/ncdmf_rainfall_thresholds/sga_key.csv"), col_names = TRUE)
+sga_key <- read_csv(file = paste0(ncdmf_tabular_data_input_path, "/sga_key.csv"), col_names = TRUE)
 
 # rainfall thresholds (tabular)
-rainfall_thresh_data_raw <- read_csv(file = paste0(data_path, "tabular/sheila_generated/ncdmf_rainfall_thresholds/rainfall_thresholds_raw_tidy.csv"), col_names = TRUE)
+rainfall_thresh_data_raw <- read_csv(file = paste0(ncdmf_tabular_data_input_path, "/rainfall_thresholds_raw_tidy.csv"), col_names = TRUE)
 
 # ndfd data available
-data_available <- read_csv(paste0(ndfd_sco_tabular_data_input_path, "data_available.csv"), col_names = TRUE)
+data_available <- read_csv(paste0(ndfd_tabular_data_input_path, "/data_available.csv"), col_names = TRUE)
 
 
 # ---- 4. find cmu's with the most leases ----
 # tidy rainfall threshold data 
 rainfall_thresh_data <- rainfall_thresh_data_raw %>%
-  select(HA_CLASS, cmu_name) %>%
-  left_join(cmu_sga_key, by = "HA_CLASS") %>%
-  left_join(sga_key, by = "grow_area") %>%
-  select(-googlemaps_description, -sga_desc_short)
+  dplyr::select(HA_CLASS, cmu_name) %>%
+  dplyr::left_join(cmu_sga_key, by = "HA_CLASS") %>%
+  dplyr::left_join(sga_key, by = "grow_area") %>%
+  dplyr::select(-googlemaps_description, -sga_desc_short)
 
 # summarize number of leases in each cmu
 lease_cmu_count <- lease_centroids_albers %>%
   st_drop_geometry() %>%
-  group_by(cmu_name) %>%
-  summarize(lease_count = n()) %>%
-  left_join(rainfall_thresh_data, by = "cmu_name")
+  dplyr::group_by(cmu_name) %>%
+  dplyr::summarize(lease_count = n()) %>%
+  dplyr::left_join(rainfall_thresh_data, by = "cmu_name")
 
 # join lease counts to cmu data (for plotting)
 cmu_bounds_lease_count_join <- cmu_bounds_albers %>%
-  left_join(lease_cmu_count, by = "cmu_name")
+  dplyr::left_join(lease_cmu_count, by = "cmu_name")
 
 # tabular data
 cmu_bounds_lease_count_join_tabular <- cmu_bounds_lease_count_join %>%
-  st_drop_geometry()
+  st_drop_geometry() %>%
+  dplyr::select(-sga_county) %>%
+  dplyr::distinct()
 
 # plot by lease count
 # pdf(file = here::here("figures", "cmu_lease_counts.pdf"), width = 10, height = 10)
@@ -123,7 +145,7 @@ cmu_bounds_5kmbuf_roc <- cmu_bounds_roc_sel %>%
 
 
 # ---- 6. find precip data that overlaps ----
-hist_precip_metadata_albers_sel <- hist_precip_metadata_albers %>%
+obs_metadata_albers_sel <- obs_metadata_albers %>%
   st_intersection(cmu_bounds_5kmbuf_roc) %>%
   dplyr::filter(perc_compl >= 90) # filter out ones that are 90% complete or more
 # without the buffer there are no rain gages within the cmus
@@ -133,39 +155,39 @@ hist_precip_metadata_albers_sel <- hist_precip_metadata_albers %>%
 # ggplot() +
 #   geom_sf(data = cmu_bounds_5kmbuf_roc, color = "blue", alpha = 0.75) +
 #   geom_sf(data = cmu_bounds_roc_sel, fill = "blue") +
-#   geom_sf(data = hist_precip_metadata_albers_sel, color = "black") +
+#   geom_sf(data = obs_metadata_albers_sel, color = "black") +
 #   theme_classic()
 # dev.off()
 
 # number of unique stations
-length(unique(hist_precip_metadata_albers_sel$loc_id))
+length(unique(obs_metadata_albers_sel$loc_id))
 # 37
 
 # total number of stations
-length(unique(hist_precip_metadata_albers$loc_id))
+length(unique(obs_metadata_albers$loc_id))
 # 1780
  
 # number of unique cmus
-length(unique(hist_precip_metadata_albers_sel$cmu_name))
+length(unique(obs_metadata_albers_sel$cmu_name))
 # 91
 
 # total number of cmus
 length(cmu_sel_list)
 # 149
 
-# so we have 91/149 (60%) cmu's represented based on available observed rainfall data
+# so we have 91/149 (61%) cmu's represented based on available observed rainfall data
 
 
 # ---- 7. loop through ndfd data to get forecast result ----
 # files available
-file_list <- list.files(path = ndfd_sco_spatial_data_input_path)
+file_list <- list.files(path = paste0(ndfd_spatial_data_input_path, "/"))
 
 # valid period list
 valid_period_list <- c(24, 48, 72)
 
 # number of observations
-# num_obs_stations <- dim(hist_precip_metadata_albers_sel)[1]
-obs_stations_list <- unique(hist_precip_metadata_albers_sel$loc_id)
+# num_obs_stations <- dim(obs_metadata_albers_sel)[1]
+obs_stations_list <- unique(obs_metadata_albers_sel$loc_id)
 num_obs_stations <- length(obs_stations_list)
 
 # make empty data frame
@@ -212,24 +234,38 @@ for (i in 1:dim(data_available)[1]) {
       # valid period
       temp_valid_period <- valid_period_list[j]
       
+      # correct date for forecast comparisons later on
+      # 24 hr is date as is (today)
+      # 48 hr is date + 1 day (tomorrow)
+      # 72 hr is date + 2 days (in two days)
+      if (j == 1) {
+        temp_date_fix <- temp_date
+      } else if (j == 2) {
+        temp_date_fix <- temp_date + days(1)
+      } else {
+        temp_date_fix <- temp_date + days(2)
+      }
+      
       # print when starts valid period
       print(paste0("started ", temp_valid_period, " hr valid period"))
       
       # find valid period files
-      temp_prd_pop_file_name <- temp_pop_file_name[grep(pattern = paste0(as.character(temp_valid_period), "hr"), x = temp_pop_file_name)]
-      temp_prd_qpf_file_name <- temp_qpf_file_name[grep(pattern = paste0(as.character(temp_valid_period), "hr"), x = temp_qpf_file_name)]
+      temp_prd_pop_file_name <- temp_pop_file_name[grep(pattern = paste0(as.character(temp_valid_period), "hr"), 
+                                                        x = temp_pop_file_name)]
+      temp_prd_qpf_file_name <- temp_qpf_file_name[grep(pattern = paste0(as.character(temp_valid_period), "hr"), 
+                                                        x = temp_qpf_file_name)]
       
       # read in ndfd raster data
-      temp_pop_raster <- raster::raster(paste0(ndfd_sco_spatial_data_input_path, temp_prd_pop_file_name))
-      temp_qpf_raster <- raster::raster(paste0(ndfd_sco_spatial_data_input_path, temp_prd_qpf_file_name))
+      temp_pop_raster <- raster::raster(paste0(ndfd_spatial_data_input_path, "/", temp_prd_pop_file_name))
+      temp_qpf_raster <- raster::raster(paste0(ndfd_spatial_data_input_path, "/", temp_prd_qpf_file_name))
       
       # save raster resolution
       temp_pop_raster_res <- raster::res(temp_pop_raster)
       temp_qpf_raster_res <- raster::res(temp_qpf_raster)
       
-      # location-based calcs
+      # --- location-based calcs ---
       # get location
-      temp_loc_coord <- hist_precip_metadata_albers_sel %>%
+      temp_loc_coord <- obs_metadata_albers_sel %>%
         dplyr::select(geometry)
       
       # get value of grid cell that overlaps with each unique location
@@ -237,15 +273,16 @@ for (i in 1:dim(data_available)[1]) {
       temp_loc_qpf_list <- round(raster::extract(temp_qpf_raster, temp_loc_coord, weights = FALSE), 4)
       
       # location-based calcs df
-      temp_loc_result_df <- data.frame(loc_id = hist_precip_metadata_albers_sel$loc_id,
+      temp_loc_result_df <- data.frame(loc_id = obs_metadata_albers_sel$loc_id,
                                        temp_loc_pop_result = temp_loc_pop_list,
                                        temp_loc_qpf_result = temp_loc_qpf_list) %>%
-        dplyr::distinct() # there are redundant stations in hist_precip_metadata_albers_sel
+        dplyr::distinct() # there are redundant stations in obs_metadata_albers_sel
       
-      # cmu-based calcs (like shellcast)
+      
+      # --- cmu-based calcs (like shellcast) ---
       # get unique cmu list
-      unique_cmu_list <- unique(hist_precip_metadata_albers_sel$cmu_name)
-      num_unique_cmu <- length(unique(hist_precip_metadata_albers_sel$cmu_name))
+      unique_cmu_list <- unique(obs_metadata_albers_sel$cmu_name)
+      num_unique_cmu <- length(unique(obs_metadata_albers_sel$cmu_name))
       
       # cmu-based calcs df
       # start with one that's empty
@@ -255,7 +292,7 @@ for (i in 1:dim(data_available)[1]) {
                                        temp_cmu_qpf_result = as.numeric()) # area weight avg value of qpf
       
       # run for each unique cmu and append to temp_cmu_result_df
-      # do this because there are redundant cmus in hist_precip_metadata_albers_sel
+      # do this because there are redundant cmus in obs_metadata_albers_sel
       for (k in 1:num_unique_cmu) {
         # save cmu name
         temp_cmu_name <- as.character(unique_cmu_list[k])
@@ -297,7 +334,7 @@ for (i in 1:dim(data_available)[1]) {
       }
       
       # join location- and cmu-based results together
-      temp_loc_cmu_results_df_join <- hist_precip_metadata_albers_sel %>%
+      temp_loc_cmu_results_df_join <- obs_metadata_albers_sel %>%
         st_drop_geometry() %>%
         dplyr::select(loc_id, cmu_name) %>%
         dplyr::left_join(temp_loc_result_df, by = "loc_id") %>%
@@ -306,7 +343,7 @@ for (i in 1:dim(data_available)[1]) {
       # save data
       temp_ndfd_data_sel <- data.frame(loc_id = temp_loc_cmu_results_df_join$loc_id,
                                        cmu_name = temp_loc_cmu_results_df_join$cmu_name,
-                                       date = temp_date,
+                                       date = temp_date_fix,
                                        valid_period_hrs = temp_valid_period,
                                        loc_pop_perc = temp_loc_cmu_results_df_join$temp_loc_pop_result,
                                        loc_qpf_in = temp_loc_cmu_results_df_join$temp_loc_qpf_result,
@@ -342,16 +379,12 @@ stop_time - start_time
 
 # ---- 8. export data ----
 # export spatial data
-# st_write(cmu_bounds_roc_sel, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_roc_sel.shp"), delete_layer = TRUE)
-# st_write(cmu_bounds_5kmbuf_roc, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_5kmbuf_roc_sel.shp"), delete_layer = TRUE)
-st_write(cmu_bounds_roc_sel, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_roc_sel_full.shp"), delete_layer = TRUE)
-st_write(cmu_bounds_5kmbuf_roc, paste0(data_path, "spatial/sheila_generated/cmu_bounds/cmu_bounds_5kmbuf_roc_sel_full.shp"), delete_layer = TRUE)
+st_write(cmu_bounds_roc_sel, paste0(ncdmf_spatial_data_output_path, "/cmu_bounds_roc_sel.shp"), delete_layer = TRUE)
+st_write(cmu_bounds_5kmbuf_roc, paste0(ncdmf_spatial_data_output_path, "/cmu_bounds_5kmbuf_roc_sel.shp"), delete_layer = TRUE)
 
 # export precip metadata that overlaps and is 90% complete
-# st_write(hist_precip_metadata_albers_sel, paste0(data_path, "spatial/sheila_generated/hist_precip_data/hist_precip_metadata_albers_sel.shp"), delete_layer = TRUE)
-st_write(hist_precip_metadata_albers_sel, paste0(data_path, "spatial/sheila_generated/hist_precip_data/hist_precip_metadata_albers_sel_full.shp"), delete_layer = TRUE)
+st_write(obs_metadata_albers_sel, paste0(obs_spatial_data_output_path, "/obs_metadata_albers_sel.shp"), delete_layer = TRUE)
 
 # export ndfd data
-# write_csv(ndfd_data_sel, paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel.csv"))
-write_csv(ndfd_data_sel, paste0(data_path, "tabular/sheila_generated/ndfd_sco_hist/ndfd_data_sel_full.csv"))
+write_csv(ndfd_data_sel, paste0(ndfd_tabular_data_output_path, "/ndfd_data_sel.csv"))
 
