@@ -1,5 +1,5 @@
 # ---- script header ----
-# script name: usgov_tidy_reg_bounds_data_script.R
+# script name: 06_usgov_tidy_reg_bounds_data_script.R
 # purpose of script: tidy up regional bounds data for project
 # author: sheila saia
 # date created: 20201102  

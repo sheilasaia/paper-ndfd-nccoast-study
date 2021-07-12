@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 # ---- script header ----
-script name: nfd_get_hist_sco_data_script.py
+script name: 05_ndfd_get_hist_sco_data_script.py
 purpose of script: This script grabs historic National Digital Forecast Dataset (NDFD) data from the NC State Climate Office (SCO) TDS server, reformats it, and stores it in a local directory.
 author: sheila saia
 email: ssaia@ncsu.edu

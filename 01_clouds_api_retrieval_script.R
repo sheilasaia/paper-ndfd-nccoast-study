@@ -1,5 +1,5 @@
 # ---- script header ----
-# script name: ncsco_api_retrieval_script
+# script name: 01_ncsco_api_retrieval_script
 # purpose of script: retrieve data from the CLOUDS API
 # author: sheila saia
 # date created: 20200610

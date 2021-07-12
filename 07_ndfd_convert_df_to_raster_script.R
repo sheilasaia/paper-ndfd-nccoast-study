@@ -1,5 +1,5 @@
 # ---- script header ----
-# script name: ndfd_convert_df_to_raster_script.R
+# script name: 07_ndfd_convert_df_to_raster_script.R
 # purpose of script: converts raw ndfd dataframes to raster data for downstream analysis
 # author: sheila saia
 # date created: 20200917

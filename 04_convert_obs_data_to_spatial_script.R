@@ -1,5 +1,5 @@
 # ---- script header ----
-# script name: obs_data_tabular_to_spatial_script.R
+# script name: 04_obs_data_tabular_to_spatial_script.R
 # purpose of script: takes all tabular historic records and converts them to spatial data
 # author: sheila saia
 # date created: 20201109

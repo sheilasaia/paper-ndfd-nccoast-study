@@ -1,5 +1,5 @@
 # ---- script header ----
-# script name: cocorahs_retrieval_script.R
+# script name: 02_cocorahs_retrieval_script.R
 # purpose of script: retrieves cocorahs data for specified date range
 # author: sheila saia
 # date created: 20200224
