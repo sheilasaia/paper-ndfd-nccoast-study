@@ -1,5 +1,5 @@
 # ---- script header ----
-# script name: wrangle_data_script.R
+# script name: 08_ndfd_cmu_calcs_script.R
 # purpose of script: get and wrangle data required for analysis
 # author: sheila saia
 # date created: 20210408
