@@ -51,8 +51,6 @@ obs_spatial_data_input_path <- here::here("data", "spatial", "obs_data_tidy")
 obs_spatial_data_output_path <- here::here("data", "spatial", "obs_data_tidy")
 
 
-
-
 # ---- 3. load data ----
 # import cmu bounds (spatial)
 cmu_bounds_albers <- st_read(paste0(ncdmf_spatial_data_input_path, "/cmu_bounds_albers.shp"))
