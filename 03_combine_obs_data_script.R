@@ -24,50 +24,50 @@ library(here)
 
 # ---- 2. define paths ----
 # tabular data input path
-tabular_data_input_path <- here::here("data", "tabular", "obs_data_raw")
+obs_tabular_data_input_path <- here::here("data", "tabular", "obs_data_raw")
 
 # tabular data output path
-tabular_data_output_path <- here::here("data", "tabular", "obs_data_tidy")
+obs_tabular_data_output_path <- here::here("data", "tabular", "obs_data_tidy")
 
 
 # ---- 3. load data ----
 # cocorahs
-cocorahs_data_raw <- read_csv(paste0(tabular_data_input_path, "/cocorahs_data_raw.csv"), col_types = cols(.default = col_character()))
-cocorahs_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/cocorahs_metadata_raw.csv"), col_types = cols(.default = col_character()))
+cocorahs_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/cocorahs_data_raw.csv"), col_types = cols(.default = col_character()))
+cocorahs_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/cocorahs_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # sco api data
 # NOTE: All columns are in the character format!
 # asos
-asos_data_raw <- read_csv(paste0(tabular_data_input_path, "/asos_data_raw.csv"), col_types = cols(.default = col_character()))
-asos_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/asos_metadata_raw.csv"), col_types = cols(.default = col_character()))
+asos_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/asos_data_raw.csv"), col_types = cols(.default = col_character()))
+asos_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/asos_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # awos
-awos_data_raw <- read_csv(paste0(tabular_data_input_path, "/awos_data_raw.csv"), col_types = cols(.default = col_character()))
-awos_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/awos_metadata_raw.csv"), col_types = cols(.default = col_character()))
+awos_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/awos_data_raw.csv"), col_types = cols(.default = col_character()))
+awos_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/awos_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # coop
-coop_data_raw <- read_csv(paste0(tabular_data_input_path, "/coop_data_raw.csv"), col_types = cols(.default = col_character()))
-coop_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/coop_metadata_raw.csv"), col_types = cols(.default = col_character()))
+coop_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/coop_data_raw.csv"), col_types = cols(.default = col_character()))
+coop_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/coop_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # econet
-econet_data_raw <- read_csv(paste0(tabular_data_input_path, "/econet_data_raw.csv"), col_types = cols(.default = col_character()))
-econet_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/econet_metadata_raw.csv"), col_types = cols(.default = col_character()))
+econet_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/econet_data_raw.csv"), col_types = cols(.default = col_character()))
+econet_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/econet_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # ncsu
-ncsu_data_raw <- read_csv(paste0(tabular_data_input_path, "/ncsu_data_raw.csv"), col_types = cols(.default = col_character()))
-ncsu_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/ncsu_metadata_raw.csv"), col_types = cols(.default = col_character()))
+ncsu_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/ncsu_data_raw.csv"), col_types = cols(.default = col_character()))
+ncsu_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/ncsu_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # nos
-nos_data_raw <- read_csv(paste0(tabular_data_input_path, "/nos_data_raw.csv"), col_types = cols(.default = col_character()))
-nos_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/nos_metadata_raw.csv"), col_types = cols(.default = col_character()))
+nos_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/nos_data_raw.csv"), col_types = cols(.default = col_character()))
+nos_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/nos_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # raws-mw
-rawsmw_data_raw <- read_csv(paste0(tabular_data_input_path, "/raws-mw_data_raw.csv"), col_types = cols(.default = col_character()))
-rawsmw_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/raws-mw_metadata_raw.csv"), col_types = cols(.default = col_character()))
+rawsmw_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/raws-mw_data_raw.csv"), col_types = cols(.default = col_character()))
+rawsmw_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/raws-mw_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # threadex
-threadex_data_raw <- read_csv(paste0(tabular_data_input_path, "/threadex_data_raw.csv"), col_types = cols(.default = col_character()))
-threadex_metadata_raw <- read_csv(paste0(tabular_data_input_path, "/threadex_metadata_raw.csv"), col_types = cols(.default = col_character()))
+threadex_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/threadex_data_raw.csv"), col_types = cols(.default = col_character()))
+threadex_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/threadex_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 
 # ---- 4. check data dimensions ----
@@ -164,7 +164,7 @@ hist_precip_metadata_compiled <- rbind(cocorahs_metadata_raw,
 
 
 # ---- 6. export data ----
-write_csv(x = hist_precip_data_compiled, path = paste0(tabular_data_output_path, "/obs_precip_data_compiled.csv"))
-write_csv(x = hist_precip_metadata_compiled, path = paste0(tabular_data_output_path, "/obs_precip_metadata_compiled.csv"))
+write_csv(x = hist_precip_data_compiled, path = paste0(obs_tabular_data_output_path, "/obs_data_compiled.csv"))
+write_csv(x = hist_precip_metadata_compiled, path = paste0(obs_tabular_data_output_path, "/obs_metadata_compiled.csv"))
 
 
