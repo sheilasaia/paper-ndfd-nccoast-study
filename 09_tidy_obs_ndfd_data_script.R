@@ -1,5 +1,5 @@
 # ---- script header ----
-# script name: 09_combine_obs_ndfd_data_script.R
+# script name: 09_tidy_obs_ndfd_data_script.R
 # purpose of script: this script combines the observed and ndfd (forecasted) datasets into one
 # author: sheila saia
 # date created: 20210715
@@ -30,9 +30,14 @@ obs_tabular_data_input_path <- here::here("data", "tabular", "obs_data_tidy")
 # path to observed spatial inputs
 obs_spatial_data_input_path <- here::here("data", "spatial", "obs_data_tidy")
 
+# path to observed spatial outputs
+obs_tabular_data_output_path <- here::here("data", "tabular", "obs_data_tidy")
+
 # path to ndfd tabular inputs
 ndfd_tabular_data_intput_path <- here::here("data", "tabular", "ndfd_data_tidy")
 
+# path to ndfd tabular outputs
+ndfd_tabular_data_output_path <- here::here("data", "tabular", "ndfd_data_tidy")
 
 # ---- load data ----
 # observed data
@@ -76,7 +81,7 @@ obs_avg_data <- obs_data_metadata_join %>%
   dplyr::ungroup() %>%
   dplyr::group_by(date, cmu_name) %>%
   dplyr::summarize(obs_avg_in = round(mean(precip_in, na.rm = TRUE), 2), # calculate average precip
-                   obs_avg_cm = obs_avg_in * 2.54, # convert to SI units
+                   obs_avg_cm = round(obs_avg_in * 2.54, 2), # convert to SI units
                    obs_measurement_count = n()) %>% # keep track of the number of stations being summarized for each day
   dplyr::select(-obs_avg_in) # drop English units
 
@@ -87,13 +92,9 @@ obs_avg_data <- obs_data_metadata_join %>%
 # cmu and rainfall threshold key
 cmu_rain_thresh_key <- obs_metadata %>%
   dplyr::select(cmu_name, rain_in) %>%
-  dplyr::mutate(rain_depth_thresh_cm = rain_in * 2.54) %>% # convert threshold to SI units
+  dplyr::mutate(rain_depth_thresh_cm = round(rain_in * 2.54, 2)) %>% # convert threshold to SI units
   dplyr::select(-rain_in) %>%
   dplyr::distinct()
-
-# join rainfall threshold to observed (average of all stations per cmu) data
-obs_avg_data_metadata_join <- obs_avg_data %>%
-  dplyr::left_join(cmu_rain_thresh_key, by = "cmu_name")
 
 
 # ---- wrangling ndfd data ----
@@ -118,3 +119,8 @@ ndfd_avg_data <- ndfd_data %>%
                 month_type = case_when(month_num <= 3 | month_num >= 10 ~ "cool",
                                        month_num > 4 | month_num < 10 ~ "warm"),
                 month_type = fct_relevel(month_type, "warm", "cool"))
+
+
+# ---- export data ----
+write_csv(x = obs_avg_data, file = paste0(obs_tabular_data_output_path, "/obs_avg_data.csv"))
+write_csv(x = ndfd_avg_data, file = paste0(ndfd_tabular_data_output_path, "/ndfd_avg_data.csv"))
