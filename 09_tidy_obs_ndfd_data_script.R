@@ -75,6 +75,10 @@ obs_data_metadata_join <- obs_data %>%
 # length(unique(obs_data_metadata_join$cmu_name))
 # 91 ok!
 
+# check that all are over 90% complete
+# min(obs_data_metadata_join$perc_compl)
+# 90.15 ok!
+
 # take average by cmu and date
 obs_avg_data <- obs_data_metadata_join %>%
   dplyr::select(loc_id, date, precip_in, cmu_name) %>%
