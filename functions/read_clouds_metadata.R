@@ -55,7 +55,7 @@ read_clouds_metadata <- function(query_raw_text) {
   # }
   
   # tidy up header
-  metadata_repl_header <- metadata_repl[1] %>%
+  metadata_repl_header_str <- metadata_repl[1] %>%
     gsub(" ", "_", .) %>%
     gsub("[", "", ., fixed = TRUE) %>%
     gsub("]", "", ., fixed = TRUE) %>%
@@ -77,11 +77,18 @@ read_clouds_metadata <- function(query_raw_text) {
   # purrr:::map_df(str_split(string = .$data, pattern = ","))
   # separate(col = metadata_repl_header_fix, sep = ",", remove = FALSE)
   
+  # final raw metadata list vector (with header)
+  metadata_raw_str <- c(metadata_repl_header_str, metadata_data_no_header_checked)
+  
+  # add carriage return to the end of each line using purrr::map()
+  metadata_raw_str_fix <- metadata_raw_str %>%
+    map_chr(~ paste(., "\n", sep = ""))
+  
   # add tidy header and read in as csv
-  metadata_tidy <- read_csv(c(metadata_repl_header, metadata_data_no_header_checked), 
-                            col_names = TRUE, 
+  metadata_tidy <- read_csv(metadata_raw_str_fix,
+                            col_names = TRUE,
                             col_types = cols(.default = col_character()))
-  # NOTE: All colunms are in the character format!
+  # NOTE: All columns are in the character format!
   
   return(metadata_tidy) 
 }

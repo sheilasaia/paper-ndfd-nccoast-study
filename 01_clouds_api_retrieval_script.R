@@ -107,7 +107,7 @@ my_clouds_networks = c("ASOS", "AWOS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW
 # my_clouds_networks = c("ASOS", "AWOS", "BUOY", "CMAN", "CoCoRaHS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
 # BUOY there's no data coming up
 # CMAN there's no data coming up
-# CoCoRaHS data get directly from their website
+# CoCoRaHS data get directly from their website see 02_cocorahs_retrieval_script.R
 
 for (n in 1:length(my_clouds_networks)) {
   # pick network
@@ -121,12 +121,18 @@ for (n in 1:length(my_clouds_networks)) {
                                end_date = "20161231")
   
   # define data
-  data_raw <- data_list$data_raw
+  data_raw <- data_list$data_raw %>% 
+    arrange(datetime_et)
   # NOTE: All columns are in the character format!
   
   # define metadata and keep replicates
   metadata_raw <- data_list$metadata_raw
   # NOTE: All columns are in the character format!
+  
+  # check for duplicates
+  # test_1 <- data_raw %>% group_by(location_id, datetime_et) %>% summarize(count = n())
+  # test_2 <- data_raw %>% group_by(datetime_et) %>% summarize(count = n())
+  # test_3 <- metadata_raw %>% group_by(location_id) %>% summarize(count = n())
   
   # only export if there's data
   if (dim(data_raw)[1] > 0) {

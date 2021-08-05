@@ -67,10 +67,10 @@ get_clouds_data <- function(api_key, clouds_network, clouds_var, start_date, end
   # step by month
   # date list df with start and end date for first step (i.e., the first month)
   date_step_list <- data.frame(start_date = ymd(start_date),
-  #                              end_date = ymd(start_date) %m+% months(1) %m-% days(1))
+                               end_date = ymd(start_date) %m+% months(1) %m-% days(1))
   # step by day
   # date_step_list <- data.frame(start_date = ymd(start_date),
-                               end_date = ymd(start_date) %m+% days(1))
+  #                             end_date = ymd(start_date) %m+% days(1))
   
   # number of steps
   num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "month"))
@@ -142,6 +142,7 @@ get_clouds_data <- function(api_key, clouds_network, clouds_var, start_date, end
     url_start_date <- paste0("start=", temp_start_date_sel, "&")
     url_end_date <- paste0("end=", temp_end_date_sel, "&")
     url_int <- "int=1 day&" # data interval (1 day = daily)
+    # url_obtype <- "obtype=D&"
     url_output <- "output=csv&" # csv output
     url_attrib <- "attr=location,datetime,var,value,unit,score,nettype,vartype,obtime,obtype,obnum,value_accum&" # have to be in this order
     url_key <- paste0("hash=", api_key)
