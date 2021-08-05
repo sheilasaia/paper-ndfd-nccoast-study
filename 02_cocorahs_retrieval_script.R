@@ -148,7 +148,7 @@ cocorahs_data <- cocorahs_data_raw_fin %>%
 
 # ---- 3. export data ----
 # export to csv
-write_csv(x = cocorahs_data, path = paste0(tabular_data_output_path, "/cocorahs_data_raw.csv"))
-write_csv(x = cocorahs_metadata, path = paste0(tabular_data_output_path, "/cocorahs_metadata_raw.csv"))
+write_csv(x = cocorahs_data, file = paste0(tabular_data_output_path, "/cocorahs_data_raw.csv"))
+write_csv(x = cocorahs_metadata, file = paste0(tabular_data_output_path, "/cocorahs_metadata_raw.csv"))
 
 

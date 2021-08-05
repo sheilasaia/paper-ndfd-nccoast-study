@@ -103,10 +103,11 @@ source(here::here("functions", "get_clouds_data.R"))
 
 # ---- 4. get data for multiple networks ----
 # list all networks to pull
-my_clouds_networks = c("ASOS", "AWOS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
+my_clouds_networks = c("ASOS", "AWOS", "COOP", "ECONET", "NOS", "RAWS", "THREADEX", "USCRN")
 # my_clouds_networks = c("ASOS", "AWOS", "BUOY", "CMAN", "CoCoRaHS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
 # BUOY there's no data coming up
 # CMAN there's no data coming up
+# NCSU there's no data coming up
 # CoCoRaHS data get directly from their website see 02_cocorahs_retrieval_script.R
 
 for (n in 1:length(my_clouds_networks)) {

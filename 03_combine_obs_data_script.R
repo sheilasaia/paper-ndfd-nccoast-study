@@ -54,16 +54,16 @@ econet_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/econet_data_ra
 econet_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/econet_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # ncsu
-ncsu_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/ncsu_data_raw.csv"), col_types = cols(.default = col_character()))
-ncsu_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/ncsu_metadata_raw.csv"), col_types = cols(.default = col_character()))
+# ncsu_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/ncsu_data_raw.csv"), col_types = cols(.default = col_character()))
+# ncsu_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/ncsu_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # nos
 nos_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/nos_data_raw.csv"), col_types = cols(.default = col_character()))
 nos_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/nos_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
-# raws-mw
-rawsmw_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/raws-mw_data_raw.csv"), col_types = cols(.default = col_character()))
-rawsmw_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/raws-mw_metadata_raw.csv"), col_types = cols(.default = col_character()))
+# raws
+raws_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/raws_data_raw.csv"), col_types = cols(.default = col_character()))
+raws_metadata_raw <- read_csv(paste0(obs_tabular_data_input_path, "/raws_metadata_raw.csv"), col_types = cols(.default = col_character()))
 
 # threadex
 threadex_data_raw <- read_csv(paste0(obs_tabular_data_input_path, "/threadex_data_raw.csv"), col_types = cols(.default = col_character()))
@@ -77,9 +77,9 @@ dim(asos_data_raw)[2]
 dim(awos_data_raw)[2]
 dim(coop_data_raw)[2]
 dim(econet_data_raw)[2]
-dim(ncsu_data_raw)[2]
+# dim(ncsu_data_raw)[2]
 dim(nos_data_raw)[2]
-dim(rawsmw_data_raw)[2]
+dim(raws_data_raw)[2]
 dim(threadex_data_raw)[2]
 # all are 12 columns! check.
 
@@ -89,9 +89,9 @@ dim(asos_metadata_raw)[2]
 dim(awos_metadata_raw)[2]
 dim(coop_metadata_raw)[2]
 dim(econet_metadata_raw)[2]
-dim(ncsu_metadata_raw)[2]
+# dim(ncsu_metadata_raw)[2]
 dim(nos_metadata_raw)[2]
-dim(rawsmw_metadata_raw)[2]
+dim(raws_metadata_raw)[2]
 dim(threadex_metadata_raw)[2]
 # all are 14 columns! check.
 
@@ -101,9 +101,9 @@ names(asos_data_raw)
 names(awos_data_raw)
 names(coop_data_raw)
 names(econet_data_raw)
-names(ncsu_data_raw)
+# names(ncsu_data_raw)
 names(nos_data_raw)
-names(rawsmw_data_raw)
+names(raws_data_raw)
 names(threadex_data_raw)
 # all are the same! check.
 
@@ -113,9 +113,9 @@ names(asos_metadata_raw)
 names(awos_metadata_raw)
 names(coop_metadata_raw)
 names(econet_metadata_raw)
-names(ncsu_metadata_raw)
+# names(ncsu_metadata_raw)
 names(nos_metadata_raw)
-names(rawsmw_metadata_raw)
+names(raws_metadata_raw)
 names(threadex_metadata_raw)
 # all are the same! check.
 
@@ -127,9 +127,9 @@ hist_precip_data_compiled <- rbind(cocorahs_data_raw,
                                    awos_data_raw,
                                    coop_data_raw,
                                    econet_data_raw,
-                                   ncsu_data_raw,
+                                   # ncsu_data_raw,
                                    nos_data_raw,
-                                   rawsmw_data_raw,
+                                   raws_data_raw,
                                    threadex_data_raw) %>%
   mutate(date = ymd(str_sub(datetime_et, start = 1, end = 10)),
          precip_in = as.numeric(value),
@@ -145,9 +145,9 @@ hist_precip_metadata_compiled <- rbind(cocorahs_metadata_raw,
                                        awos_metadata_raw,
                                        coop_metadata_raw,
                                        econet_metadata_raw,
-                                       ncsu_metadata_raw,
+                                       # ncsu_metadata_raw,
                                        nos_metadata_raw,
-                                       rawsmw_metadata_raw,
+                                       raws_metadata_raw,
                                        threadex_metadata_raw) %>%
   mutate(loc_id = as.character(location_id),
          long = as.numeric(longitude_degrees_east),
@@ -164,7 +164,7 @@ hist_precip_metadata_compiled <- rbind(cocorahs_metadata_raw,
 
 
 # ---- 6. export data ----
-write_csv(x = hist_precip_data_compiled, path = paste0(obs_tabular_data_output_path, "/obs_data_compiled.csv"))
-write_csv(x = hist_precip_metadata_compiled, path = paste0(obs_tabular_data_output_path, "/obs_metadata_compiled.csv"))
+write_csv(x = hist_precip_data_compiled, file = paste0(obs_tabular_data_output_path, "/obs_data_compiled.csv"))
+write_csv(x = hist_precip_metadata_compiled, file = paste0(obs_tabular_data_output_path, "/obs_metadata_compiled.csv"))
 
 
