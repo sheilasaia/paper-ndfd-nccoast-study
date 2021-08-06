@@ -19,7 +19,7 @@ library(tidyverse)
 library(xml2)
 library(lubridate)
 library(here)
-library(tidylog)
+# library(tidylog)
 
 # to install xml2
 # devtools::install_github("r-lib/xml2")

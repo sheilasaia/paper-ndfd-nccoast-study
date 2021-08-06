@@ -86,7 +86,7 @@ library(RCurl)
 library(lubridate)
 library(httr)
 library(here)
-library(tidylog)
+# library(tidylog)
 
 
 # ---- 2. set keys and paths ----

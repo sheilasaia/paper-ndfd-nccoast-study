@@ -18,8 +18,8 @@
 # ---- 1. load libraries ----
 library(tidyverse)
 library(lubridate)
-library(tidylog)
 library(here)
+# library(tidylog)
 
 
 # ---- 2. define paths ----
@@ -122,49 +122,48 @@ names(threadex_metadata_raw)
 
 # ---- 5. compile all data ----
 # compile and tidy up data
-hist_precip_data_compiled <- rbind(cocorahs_data_raw,
-                                   asos_data_raw,
-                                   awos_data_raw,
-                                   coop_data_raw,
-                                   econet_data_raw,
-                                   # ncsu_data_raw,
-                                   nos_data_raw,
-                                   raws_data_raw,
-                                   threadex_data_raw) %>%
-  mutate(date = ymd(str_sub(datetime_et, start = 1, end = 10)),
-         precip_in = as.numeric(value),
-         loc_id = as.character(location_id)) %>% #,
-         #precip_month_acc_in = as.numeric(value_accum)) %>%
-  select(loc_id, date, precip_in) %>% # , precip_month_acc_in) %>%
-  arrange(loc_id, date)
+obs_data_compiled <- rbind(cocorahs_data_raw,
+                           asos_data_raw,
+                           awos_data_raw,
+                           coop_data_raw,
+                           econet_data_raw,
+                           # ncsu_data_raw,
+                           nos_data_raw,
+                           raws_data_raw,
+                           threadex_data_raw) %>%
+  dplyr::mutate(date = ymd(str_sub(datetime_et, start = 1, end = 10)),
+                precip_in = as.numeric(value),
+                loc_id = as.character(location_id)) %>% #,
+  #precip_month_acc_in = as.numeric(value_accum)) %>%
+  dplyr::select(loc_id, date, precip_in) %>% # , precip_month_acc_in) %>%
+  dplyr::arrange(loc_id, date)
 # Input `precip_in` is `as.numeric(value)`. error because there are some characters in the value column - these will become NA's which is fine
 
 #compile and tidy up metadata
-hist_precip_metadata_compiled <- rbind(cocorahs_metadata_raw,
-                                       asos_metadata_raw,
-                                       awos_metadata_raw,
-                                       coop_metadata_raw,
-                                       econet_metadata_raw,
-                                       # ncsu_metadata_raw,
-                                       nos_metadata_raw,
-                                       raws_metadata_raw,
-                                       threadex_metadata_raw) %>%
-  mutate(loc_id = as.character(location_id),
-         long = as.numeric(longitude_degrees_east),
-         lat = as.numeric(latitude_degrees_north),
-         network = network_type,
-         cosponsor = supporting_agency_for_location,
-         elev_ft = as.numeric(elevation_feet),
-         start_date = ymd(start_date),
-         end_date = ymd(end_date),
-         obs_types = obtypes_available) %>%
-  select(loc_id, long, lat, network, city, county, state, elev_ft, start_date, end_date, cosponsor, obs_types) %>%
-  arrange(network, city)
+obs_metadata_compiled <- bind_rows(cocorahs_metadata_raw,
+                                   asos_metadata_raw,
+                                   awos_metadata_raw,
+                                   coop_metadata_raw,
+                                   econet_metadata_raw,
+                                   # ncsu_metadata_raw,
+                                   nos_metadata_raw,
+                                   raws_metadata_raw,
+                                   threadex_metadata_raw) %>%
+  dplyr::mutate(loc_id = as.character(location_id),
+                long = as.numeric(longitude_degrees_east),
+                lat = as.numeric(latitude_degrees_north),
+                network = network_type,
+                cosponsor = supporting_agency_for_location,
+                elev_ft = as.numeric(elevation_feet),
+                start_date = ymd(start_date),
+                end_date = ymd(end_date),
+                obs_types = obtypes_available) %>%
+  dplyr::select(loc_id, long, lat, network, city, county, state, elev_ft, start_date, end_date, cosponsor, obs_types) %>%
+  dplyr::arrange(network, city)
 # Input `elev_ft` is `as.numeric(elevation_feet)`. error because there are some characters in the elevation_feet column - these will become NA's which is fine
 
 
 # ---- 6. export data ----
-write_csv(x = hist_precip_data_compiled, file = paste0(obs_tabular_data_output_path, "/obs_data_compiled.csv"))
-write_csv(x = hist_precip_metadata_compiled, file = paste0(obs_tabular_data_output_path, "/obs_metadata_compiled.csv"))
-
+write_csv(x = obs_data_compiled, file = paste0(obs_tabular_data_output_path, "/obs_data_compiled.csv"))
+write_csv(x = obs_metadata_compiled, file = paste0(obs_tabular_data_output_path, "/obs_metadata_compiled.csv"))
 
