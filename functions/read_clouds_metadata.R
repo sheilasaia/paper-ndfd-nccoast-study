@@ -82,7 +82,7 @@ read_clouds_metadata <- function(query_raw_text) {
   
   # add carriage return to the end of each line using purrr::map()
   metadata_raw_str_fix <- metadata_raw_str %>%
-    map_chr(~ paste(., "\n", sep = ""))
+    purrr::map_chr(~ paste(., "\n", sep = ""))
   
   # add tidy header and read in as csv
   metadata_tidy <- read_csv(metadata_raw_str_fix,

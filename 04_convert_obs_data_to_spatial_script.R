@@ -20,8 +20,8 @@
 library(tidyverse)
 library(lubridate)
 library(sf)
-library(tidylog)
 library(here)
+# library(tidylog)
 
 
 # ---- 2. define paths and projections ----
@@ -48,29 +48,32 @@ obs_precip_metadata <- read_csv(paste0(tabular_data_input_path, "/obs_metadata_c
 
 
 # ---- check how complete ----
+# number of days in study (i.e., 2 years --> 2015 and 2016)
+number_of_days <- length(unique(obs_precip_data$date))
+
 # check how complete each station record is
 obs_precip_data_completeness <- obs_precip_data %>%
   na.omit() %>% # if you don't add this NA cell will be counted in n()
   dplyr::group_by(loc_id) %>%
-  dplyr::summarize(count = n()),
-                   perc_compl = round((count/length(obs_precip_metadata$loc_id)) * 100, digits = 3)) %>%
+  dplyr::summarize(count = n(),
+                   perc_compl = round((count/number_of_days) * 100, digits = 3)) %>%
   dplyr::select(loc_id, perc_compl)
 
 # join completeness with metadata
 obs_precip_metadata_completeness <- obs_precip_metadata %>%
-  left_join(obs_precip_data_completeness, by = "loc_id") %>%
-  mutate(perc_compl = if_else(is.na(perc_compl), 0, perc_compl))
+  dplyr::left_join(obs_precip_data_completeness, by = "loc_id") %>%
+  dplyr::mutate(perc_compl = if_else(is.na(perc_compl), 0, perc_compl))
 
 
 # ---- make tabular data spatial ----
 # convert to spatial data
-obs_precip_spatial_metadata <- st_as_sf(obs_precip_metadata_completeness, coords = c("long", "lat"), crs = wgs84_epsg, dim = "XY") %>%
+obs_metadata_albers <- st_as_sf(obs_precip_metadata_completeness, coords = c("long", "lat"), crs = wgs84_epsg, dim = "XY") %>%
   st_transform(crs = conus_albers_epsg)
 
 # check
-head(obs_precip_spatial_metadata)
+head(obs_metadata_albers)
 
 
 # ---- export ----
-st_write(obs_precip_spatial_metadata, paste0(spatial_data_output_path, "/obs_metadata_albers.shp"), delete_layer = TRUE)
+st_write(obs_metadata_albers, paste0(spatial_data_output_path, "/obs_metadata_albers.shp"), delete_layer = TRUE)
 

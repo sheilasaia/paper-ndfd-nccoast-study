@@ -64,39 +64,63 @@
 #' 
 #' Requires read_sco_api_metadata.R function
 get_clouds_data <- function(api_key, clouds_network, clouds_var, start_date, end_date) {
-  # step by month
-  # date list df with start and end date for first step (i.e., the first month)
-  date_step_list <- data.frame(start_date = ymd(start_date),
-                               end_date = ymd(start_date) %m+% months(1) %m-% days(1))
-  # step by day
-  # date_step_list <- data.frame(start_date = ymd(start_date),
-  #                             end_date = ymd(start_date) %m+% days(1))
   
-  # number of steps
-  num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "month"))
-  # num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "day"))
-  
-  # if more than one step then append steps to date_step_list
-  if (num_steps > 1) {
-    # loop
-    for(i in 2:num_steps) {
-      # redefine start and end
-      temp_start_date <- date_step_list$start_date[(i - 1)] %m+% months(1)
-      temp_end_date <- temp_start_date %m+% months(1) %m-% days(1)
-      # temp_start_date <- date_step_list$start_date[(i - 1)] %m+% days(1)
-      # temp_end_date <- temp_start_date %m+% days(1)
-      # %m+% manual: https://www.rdocumentation.org/packages/lubridate/versions/1.7.9/topics/%25m%2B%25
-      
-      # make df to add to final df
-      temp_date_list <- data.frame(start_date = temp_start_date,
-                                   end_date = temp_end_date)
-      
-      # save temp df to final df
-      date_step_list <- rbind(date_step_list, temp_date_list)
+  if (clouds_network == "COOP") {
+    # step by day
+    # date list df with start and end date for first step
+    date_step_list <- data.frame(start_date = ymd(start_date),
+                                 end_date = ymd(start_date) %m+% days(1))
+    
+    # number of steps
+    num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "day")) + 1
+    
+    # if more than one step then append steps to date_step_list
+    if (num_steps > 1) {
+      # loop
+      for(i in 2:num_steps) {
+        # redefine start and end
+        temp_start_date <- date_step_list$start_date[(i - 1)] %m+% days(1)
+        temp_end_date <- temp_start_date %m+% days(1)
+        # %m+% manual: https://www.rdocumentation.org/packages/lubridate/versions/1.7.9/topics/%25m%2B%25
+        
+        # make df to add to final df
+        temp_date_list <- data.frame(start_date = temp_start_date,
+                                     end_date = temp_end_date)
+        
+        # save temp df to final df
+        date_step_list <- bind_rows(date_step_list, temp_date_list)
+      }
     }
   }
   
-  # else no appending
+  else {
+    # step by month
+    # date list df with start and end date for first step (i.e., the first month)
+    date_step_list <- data.frame(start_date = ymd(start_date),
+                                 end_date = ymd(start_date) %m+% months(1) %m-% days(1))
+ 
+    # number of steps
+    num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "month"))
+    # num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "day"))
+    
+    # if more than one step then append steps to date_step_list
+    if (num_steps > 1) {
+      # loop
+      for(i in 2:num_steps) {
+        # redefine start and end
+        temp_start_date <- date_step_list$start_date[(i - 1)] %m+% months(1)
+        temp_end_date <- temp_start_date %m+% months(1) %m-% days(1)
+        # %m+% manual: https://www.rdocumentation.org/packages/lubridate/versions/1.7.9/topics/%25m%2B%25
+        
+        # make df to add to final df
+        temp_date_list <- data.frame(start_date = temp_start_date,
+                                     end_date = temp_end_date)
+        
+        # save temp df to final df
+        date_step_list <- bind_rows(date_step_list, temp_date_list)
+      }
+    }
+  }
   
   # create empty df's for data and metadata
   # data_raw <- NULL
@@ -130,9 +154,17 @@ get_clouds_data <- function(api_key, clouds_network, clouds_var, start_date, end
                          obtypes_available = character())
   
   for (j in 1:num_steps) {
-    # define date range
-    temp_start_date_sel <- date_step_list$start_date[j]
-    temp_end_date_sel <- date_step_list$end_date[j]
+    if (clouds_network == "COOP") {
+      # define date range
+      temp_start_date_sel <- date_step_list$start_date[j]
+      temp_end_date_sel <- temp_start_date_sel
+    }
+    
+    else {
+      # define date range
+      temp_start_date_sel <- date_step_list$start_date[j]
+      temp_end_date_sel <- date_step_list$end_date[j]
+    }
     
     # define url parts that stay the same
     base_url <- "https://api.climate.ncsu.edu/data.php?"
@@ -183,9 +215,9 @@ get_clouds_data <- function(api_key, clouds_network, clouds_var, start_date, end
         
         # grab data from url (without metadata)
         temp_data_raw <- temp_data_check  %>% # this grabs just the data, length(test_data) > 1 then there's data, datetime is ET
-          mutate(datetime_et = datetime,
+          dplyr::mutate(datetime_et = datetime,
                  location_id = location) %>%
-          select(location_id, datetime_et, var:value_accum) # make location id column the same as metadata, use date as character columns for now
+          dplyr::select(location_id, datetime_et, var:value_accum) # make location id column the same as metadata, use date as character columns for now
         
         # use function
         temp_metadata_raw <- read_clouds_metadata(temp_data_text_raw)
