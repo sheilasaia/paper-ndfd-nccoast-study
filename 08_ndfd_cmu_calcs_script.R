@@ -191,7 +191,6 @@ length(unique(cmu_missing$HA_CLASS))
 # 47 + 102 = 149
 
 
-
 # ---- 7. loop through ndfd data to get forecast result ----
 # files available
 file_list <- list.files(path = paste0(ndfd_spatial_data_input_path, "/"))
@@ -341,7 +340,7 @@ for (i in 1:dim(data_available)[1]) {
                                               temp_cmu_qpf_result = round(sum(temp_qpf_area_weighted_df$area_weighted_avg), 4)) 
         
         # bind results
-        temp_cmu_result_df <-  rbind(temp_cmu_result_df, temp_cmu_result_df_part)
+        temp_cmu_result_df <-  bind_rows(temp_cmu_result_df, temp_cmu_result_df_part)
         
         # print when finished with point
         # print(paste0("finished cmu: ", k, " of ", num_unique_cmu))
@@ -366,7 +365,7 @@ for (i in 1:dim(data_available)[1]) {
                                        cmu_qpf_in = temp_loc_cmu_results_df_join$temp_cmu_qpf_result)
       
       # bind results
-      ndfd_data_sel <-  rbind(ndfd_data_sel, temp_ndfd_data_sel)
+      ndfd_data_sel <-  bind_rows(ndfd_data_sel, temp_ndfd_data_sel)
       
       # print when done with period
       print(paste0(temp_valid_period, " hr valid period completled for ", temp_date))
