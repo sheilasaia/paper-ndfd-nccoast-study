@@ -177,7 +177,7 @@ length(cmu_sel_list)
 
 # what cmu's are not represented in this analysis?
 # these missing cmu's do not have enough observation data available for analysis
-`%notin%` <- Negate(`%in%`)
+`%notin%` <- Negate(`%in%`) # source: https://www.r-bloggers.com/2018/07/the-notin-operator/
 cmu_missing <- cmu_bounds_albers %>%
   st_drop_geometry() %>%
   dplyr::filter(cmu_name %notin% unique(obs_metadata_albers_sel$cmu_name)) %>%
