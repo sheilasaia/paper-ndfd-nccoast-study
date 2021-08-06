@@ -21,8 +21,8 @@ library(tidyverse)
 library(sf)
 library(raster)
 library(here)
-library(tidylog)
 library(lubridate)
+# library(tidylog)
 
 
 # ---- 2. define paths ----
@@ -122,58 +122,74 @@ cmu_bounds_lease_count_join_tabular <- cmu_bounds_lease_count_join %>%
 # ---- 5. select cmu's for analysis ----
 # cmu list
 # cmu_sel_list <- c("U092", "U096", "U144") # to start
-cmu_sel_list <- unique(cmu_bounds_albers$cmu_name) # select all
+cmu_sel_list <- unique(cmu_bounds_albers$cmu_name) # select all (i.e., 149)
 
-# select cmus
-cmu_bounds_roc_sel <- cmu_bounds_albers %>%
+# select cmus for analysis
+cmu_bounds_sel <- cmu_bounds_albers %>%
   filter(cmu_name %in% cmu_sel_list)
 
 # buffer by 5km
-cmu_bounds_5kmbuf_roc <- cmu_bounds_roc_sel %>%
+cmu_bounds_sel_5kmbuf <- cmu_bounds_sel %>%
   st_buffer(dist = 5000) # dist = 5000 means 5km
 
 # plot selected cmu's with buffers
 # pdf(file = here::here("figures", "cmu_selection_with_buffer_fullanalaysis.pdf"), width = 10, height = 10)
 # ggplot() +
-#   geom_sf(data = cmu_bounds_5kmbuf_roc, color = "blue", alpha = 0.75) +
+#   geom_sf(data = cmu_bounds_sel_5kmbuf, color = "blue", alpha = 0.75) +
 #   geom_sf(data = cmu_bounds_lease_count_join) + 
-#   geom_sf(data = cmu_bounds_roc_sel, fill = "blue") +
+#   geom_sf(data = cmu_bounds_sel, fill = "blue") +
 #   theme_classic()
 # dev.off()
 
 
 # ---- 6. find precip data that overlaps ----
 obs_metadata_albers_sel <- obs_metadata_albers %>%
-  st_intersection(cmu_bounds_5kmbuf_roc) %>%
+  st_intersection(cmu_bounds_sel_5kmbuf) %>%
   dplyr::filter(perc_compl >= 90) # filter out ones that are 90% complete or more
 # without the buffer there are no rain gages within the cmus
 
 # plot cmus and observations
 # pdf(file = here::here("figures", "cmu_selection_with_obs_fullanalysis.pdf"), width = 10, height = 10)
 # ggplot() +
-#   geom_sf(data = cmu_bounds_5kmbuf_roc, color = "blue", alpha = 0.75) +
-#   geom_sf(data = cmu_bounds_roc_sel, fill = "blue") +
+#   geom_sf(data = cmu_bounds_sel_5kmbuf, color = "blue", alpha = 0.75) +
+#   geom_sf(data = cmu_bounds_sel, fill = "blue") +
 #   geom_sf(data = obs_metadata_albers_sel, color = "black") +
 #   theme_classic()
 # dev.off()
 
 # number of unique stations
 length(unique(obs_metadata_albers_sel$loc_id))
-# 37
+# new is 54
 
 # total number of stations
 length(unique(obs_metadata_albers$loc_id))
-# 1780
+# 1778
  
 # number of unique cmus
 length(unique(obs_metadata_albers_sel$cmu_name))
-# 91
+# 102
 
 # total number of cmus
 length(cmu_sel_list)
 # 149
 
-# so we have 91/149 (61%) cmu's represented based on available observed rainfall data
+# so we have 102/149 (68%) cmu's represented based on available observed rainfall data
+
+# what cmu's are not represented in this analysis?
+# these missing cmu's do not have enough observation data available for analysis
+`%notin%` <- Negate(`%in%`)
+cmu_missing <- cmu_bounds_albers %>%
+  st_drop_geometry() %>%
+  dplyr::filter(cmu_name %notin% unique(obs_metadata_albers_sel$cmu_name)) %>%
+  dplyr::left_join(rainfall_thresh_data, by = "cmu_name") %>%
+  dplyr::distinct()
+# note some cmu's are in multiple sga so the length of cmu_missing is > 47
+# can find unique cmu's by looking at HA_CLASS
+  
+# check for uniqueness and total
+length(unique(cmu_missing$HA_CLASS))
+# 47 + 102 = 149
+
 
 
 # ---- 7. loop through ndfd data to get forecast result ----
@@ -296,7 +312,7 @@ for (i in 1:dim(data_available)[1]) {
         temp_cmu_name <- as.character(unique_cmu_list[k])
         
         # get cmu bounds vector
-        temp_cmu_bounds <- cmu_bounds_roc_sel %>%
+        temp_cmu_bounds <- cmu_bounds_sel %>%
           dplyr::filter(cmu_name == temp_cmu_name) %>%
           dplyr::select(geometry)
         
@@ -377,8 +393,8 @@ stop_time - start_time
 
 # ---- 8. export data ----
 # export spatial data
-st_write(cmu_bounds_roc_sel, paste0(ncdmf_spatial_data_output_path, "/cmu_bounds_roc_sel.shp"), delete_layer = TRUE)
-st_write(cmu_bounds_5kmbuf_roc, paste0(ncdmf_spatial_data_output_path, "/cmu_bounds_5kmbuf_roc_sel.shp"), delete_layer = TRUE)
+st_write(cmu_bounds_sel, paste0(ncdmf_spatial_data_output_path, "/cmu_bounds_sel.shp"), delete_layer = TRUE)
+st_write(cmu_bounds_sel_5kmbuf, paste0(ncdmf_spatial_data_output_path, "/cmu_bounds_sel_5kmbuf_sel.shp"), delete_layer = TRUE)
 
 # export precip metadata that overlaps and is 90% complete
 st_write(obs_metadata_albers_sel, paste0(obs_spatial_data_output_path, "/obs_metadata_albers_sel.shp"), delete_layer = TRUE)
