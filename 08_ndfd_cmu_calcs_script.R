@@ -179,7 +179,6 @@ length(cmu_sel_list)
 # these missing cmu's do not have enough observation data available for analysis
 `%notin%` <- Negate(`%in%`) # source: https://www.r-bloggers.com/2018/07/the-notin-operator/
 cmu_missing <- cmu_bounds_albers %>%
-  st_drop_geometry() %>%
   dplyr::filter(cmu_name %notin% unique(obs_metadata_albers_sel$cmu_name)) %>%
   dplyr::left_join(rainfall_thresh_data, by = "cmu_name") %>%
   dplyr::distinct()
@@ -252,11 +251,11 @@ for (i in 1:dim(data_available)[1]) {
       # 48 hr is date + 1 day (tomorrow)
       # 72 hr is date + 2 days (in two days)
       if (j == 1) {
-        temp_date_fix <- temp_date
+        temp_date_fix <- as.character(temp_date)
       } else if (j == 2) {
-        temp_date_fix <- temp_date + days(1)
+        temp_date_fix <- as.character(temp_date + days(1))
       } else {
-        temp_date_fix <- temp_date + days(2)
+        temp_date_fix <- as.character(temp_date + days(2))
       }
       
       # print when starts valid period
@@ -393,7 +392,8 @@ stop_time - start_time
 # ---- 8. export data ----
 # export spatial data
 st_write(cmu_bounds_sel, paste0(ncdmf_spatial_data_output_path, "/cmu_bounds_sel.shp"), delete_layer = TRUE)
-st_write(cmu_bounds_sel_5kmbuf, paste0(ncdmf_spatial_data_output_path, "/cmu_bounds_sel_5kmbuf_sel.shp"), delete_layer = TRUE)
+st_write(cmu_bounds_sel_5kmbuf, paste0(ncdmf_spatial_data_output_path, "/cmu_bounds_sel_5kmbuf.shp"), delete_layer = TRUE)
+st_write(cmu_missing, paste0(ncdmf_spatial_data_output_path, "/cmu_missing.shp"), delete_layer = TRUE)
 
 # export precip metadata that overlaps and is 90% complete
 st_write(obs_metadata_albers_sel, paste0(obs_spatial_data_output_path, "/obs_metadata_albers_sel.shp"), delete_layer = TRUE)
