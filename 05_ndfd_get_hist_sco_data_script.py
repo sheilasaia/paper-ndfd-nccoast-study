@@ -34,6 +34,10 @@ from pydap.client import open_url # to convert bin file
 import requests # to check if website exists
 from csv import writer
 
+# install pypap with conda
+# in terminal: conda install -c conda-forge pydap
+
+
 # %% set paths
 
 # set project path
@@ -97,17 +101,16 @@ test_pop12_datetime_ymdh_str
 # %% generate datetime dataset for looping
 
 # define start datetime
-start_datetime_str = "2015-01-01 00:00"
+start_datetime_str = "2014-12-25 00:00"
 
 # create list with start datetime as first value
 datetime_list = [start_datetime_str]
 
 # define length of list (number of days for however many years)
-num_years = 2
-num_days_per_year = 365
+num_days_in_query = 737
 
 # loop to fill in datetime_list
-for i in range(1, (num_days_per_year * num_years + 1)):
+for i in range(1, (num_days_in_query + 1)):
     start_step = pandas.to_datetime(datetime_list[i-1], format = "%Y-%m-%d %H:%M").tz_localize(tz = "UCT")
     next_step = start_step + pandas.Timedelta('1 days')
     next_step_str = next_step.strftime("%Y-%m-%d %H:%M")
