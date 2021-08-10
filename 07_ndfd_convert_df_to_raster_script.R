@@ -23,7 +23,7 @@ library(raster)
 library(sf)
 library(lubridate)
 library(here)
-library(tidylog)
+# library(tidylog)
 
 
 # ---- 2. define base paths ----
@@ -91,10 +91,10 @@ for (i in 1:dim(data_available)[1]) {
     temp_qpf_file_name <- temp_files[grep(pattern = "qpf", x = temp_files)]
     
     # load in tabular data
-    temp_ndfd_pop12_data_raw <- read_csv(paste0(tabular_data_input_path, temp_pop12_file_name),
+    temp_ndfd_pop12_data_raw <- read_csv(paste0(tabular_data_input_path, "/", temp_pop12_file_name),
                                          col_types = list(col_double(), col_double(), col_double(), col_double(), col_double(), col_double(), col_double(),
                                                           col_character(), col_character(), col_character(), col_character(), col_character()))
-    temp_ndfd_qpf_data_raw <- read_csv(paste0(tabular_data_input_path, temp_qpf_file_name),
+    temp_ndfd_qpf_data_raw <- read_csv(paste0(tabular_data_input_path, "/", temp_qpf_file_name),
                                        col_types = list(col_double(), col_double(), col_double(), col_double(), col_double(), col_double(), col_double(),
                                                         col_character(), col_character(), col_character(), col_character(), col_character()))
     
