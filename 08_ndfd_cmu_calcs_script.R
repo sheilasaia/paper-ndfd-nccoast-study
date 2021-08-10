@@ -205,6 +205,7 @@ num_obs_stations <- length(obs_stations_list)
 # make empty data frame
 ndfd_data_sel <- data.frame(loc_id = as.character(),
                             cmu_name = as.character(),
+                            ndfd_date = as.character(),
                             date = as.character(),
                             valid_period_hrs = as.numeric(),
                             loc_pop_perc = as.numeric(),
@@ -355,6 +356,7 @@ for (i in 1:dim(data_available)[1]) {
       # save data
       temp_ndfd_data_sel <- data.frame(loc_id = temp_loc_cmu_results_df_join$loc_id,
                                        cmu_name = temp_loc_cmu_results_df_join$cmu_name,
+                                       ndfd_date = temp_date,
                                        date = temp_date_fix,
                                        valid_period_hrs = temp_valid_period,
                                        loc_pop_perc = temp_loc_cmu_results_df_join$temp_loc_pop_result,
