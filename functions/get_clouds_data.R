@@ -120,6 +120,16 @@ get_clouds_data <- function(api_key, clouds_network, clouds_var, start_date, end
         date_step_list <- bind_rows(date_step_list, temp_date_list)
       }
     }
+    
+    # pull the whole period (which is < 1 month)
+    else {
+      # redefinie date_step_list
+      date_step_list <- data.frame(start_date = ymd(start_date),
+                                   end_date = ymd(end_date))
+      
+      # redefine num_steps so it's not zero
+      num_steps <- round(time_length(ymd(end_date) - ymd(start_date), unit = "month")) + 1
+    }
   }
   
   # create empty df's for data and metadata
@@ -216,7 +226,7 @@ get_clouds_data <- function(api_key, clouds_network, clouds_var, start_date, end
         # grab data from url (without metadata)
         temp_data_raw <- temp_data_check  %>% # this grabs just the data, length(test_data) > 1 then there's data, datetime is ET
           dplyr::mutate(datetime_et = datetime,
-                 location_id = location) %>%
+                        location_id = location) %>%
           dplyr::select(location_id, datetime_et, var:value_accum) # make location id column the same as metadata, use date as character columns for now
         
         # use function
