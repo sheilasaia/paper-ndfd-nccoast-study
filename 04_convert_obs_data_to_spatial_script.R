@@ -48,7 +48,7 @@ obs_precip_metadata <- read_csv(paste0(tabular_data_input_path, "/obs_metadata_c
 
 
 # ---- check how complete ----
-# number of days in study (i.e., 2 years --> 2015 and 2016)
+# number of days in study (i.e., 2 years --> 2015 and 2016 with 7 day buffer for 3-day rolling)
 number_of_days <- length(unique(obs_precip_data$date))
 
 # check how complete each station record is

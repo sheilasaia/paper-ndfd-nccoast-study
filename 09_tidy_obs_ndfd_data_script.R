@@ -17,10 +17,10 @@
 
 # ---- load libraries ----
 library(tidyverse)
-library(tidylog)
 library(here)
 library(lubridate)
 library(sf)
+# library(tidylog)
 
 
 # ---- define paths ----
@@ -73,11 +73,13 @@ obs_data_metadata_join <- obs_data %>%
 
 # check number of unique cmus
 # length(unique(obs_data_metadata_join$cmu_name))
-# 91 ok!
+# 102 ok!
 
-# check that all are over 90% complete
-# min(obs_data_metadata_join$perc_compl)
+# check that all are over 90% complete and less than 100%
+# min(obs_data_metadata_join$perc_compl, na.rm = TRUE)
 # 90.15 ok!
+# max(obs_data_metadata_join$perc_compl, na.rm = TRUE)
+# 100 ok!
 
 # take average by cmu and date
 obs_avg_data <- obs_data_metadata_join %>%
@@ -87,7 +89,9 @@ obs_avg_data <- obs_data_metadata_join %>%
   dplyr::summarize(obs_avg_in = round(mean(precip_in, na.rm = TRUE), 2), # calculate average precip
                    obs_avg_cm = round(obs_avg_in * 2.54, 2), # convert to SI units
                    obs_measurement_count = n()) %>% # keep track of the number of stations being summarized for each day
-  dplyr::select(-obs_avg_in) # drop English units
+  dplyr::select(-obs_avg_in) %>% # drop English units
+  dplyr::ungroup() %>%
+  dplyr::filter((date > as.Date("2015-01-03")) & (date <= as.Date("2016-12-31")))
 
 # check number of unique cmus
 # length(unique(obs_avg_data$cmu_name))
@@ -104,7 +108,7 @@ cmu_rain_thresh_key <- obs_metadata %>%
 # ---- wrangling ndfd data ----
 # calculate the mean 
 ndfd_avg_data <- ndfd_data %>%
-  dplyr::filter((date >= as.Date("2015-01-03")) & (date <= as.Date("2016-12-31"))) %>%
+  dplyr::filter((date > as.Date("2015-01-03")) & (date <= as.Date("2016-12-31"))) %>%
   dplyr::ungroup() %>%
   dplyr::group_by(date, valid_period_hrs, cmu_name) %>%
   # use mean to summarize here for both loc- and cmu-based calcs when there are more than one station in a cmu
@@ -123,6 +127,11 @@ ndfd_avg_data <- ndfd_data %>%
                 month_type = case_when(month_num <= 3 | month_num >= 10 ~ "cool",
                                        month_num > 4 | month_num < 10 ~ "warm"),
                 month_type = fct_relevel(month_type, "warm", "cool"))
+
+# check that each day has three observations (for 24, 48, and 72 hrs)
+ndfd_avg_data_check <- ndfd_avg_data %>%
+  group_by(date, cmu_name) %>%
+  summarize(count = n())
 
 
 # ---- export data ----

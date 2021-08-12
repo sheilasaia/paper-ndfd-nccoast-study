@@ -163,7 +163,7 @@ length(unique(obs_metadata_albers_sel$loc_id))
 
 # total number of stations
 length(unique(obs_metadata_albers$loc_id))
-# 1778
+# 1779
  
 # number of unique cmus
 length(unique(obs_metadata_albers_sel$cmu_name))
@@ -247,16 +247,16 @@ for (i in 1:dim(data_available)[1]) {
       # valid period
       temp_valid_period <- valid_period_list[j]
       
-      # correct date for forecast comparisons later on
+      # add lag to date for forecast comparisons later on
       # 24 hr is date as is (today)
       # 48 hr is date + 1 day (tomorrow)
       # 72 hr is date + 2 days (in two days)
       if (j == 1) {
-        temp_date_fix <- as.character(temp_date)
+        temp_date_lag <- as.character(temp_date)
       } else if (j == 2) {
-        temp_date_fix <- as.character(temp_date + days(1))
+        temp_date_lag <- as.character(temp_date + days(1))
       } else {
-        temp_date_fix <- as.character(temp_date + days(2))
+        temp_date_lag <- as.character(temp_date + days(2))
       }
       
       # print when starts valid period
@@ -356,8 +356,8 @@ for (i in 1:dim(data_available)[1]) {
       # save data
       temp_ndfd_data_sel <- data.frame(loc_id = temp_loc_cmu_results_df_join$loc_id,
                                        cmu_name = temp_loc_cmu_results_df_join$cmu_name,
-                                       ndfd_date = temp_date,
-                                       date = temp_date_fix,
+                                       ndfd_date = as.character(temp_date),
+                                       date = temp_date_lag,
                                        valid_period_hrs = temp_valid_period,
                                        loc_pop_perc = temp_loc_cmu_results_df_join$temp_loc_pop_result,
                                        loc_qpf_in = temp_loc_cmu_results_df_join$temp_loc_qpf_result,

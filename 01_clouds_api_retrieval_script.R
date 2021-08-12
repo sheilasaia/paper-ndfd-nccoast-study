@@ -103,11 +103,12 @@ source(here::here("functions", "get_clouds_data.R"))
 
 # ---- 4. get data for multiple networks ----
 # list all networks to pull
-my_clouds_networks = c("ASOS", "AWOS", "COOP", "ECONET", "NOS", "RAWS", "THREADEX", "USCRN")
+my_clouds_networks = c("ASOS", "AWOS", "COOP", "ECONET", "NOS", "RAWS", "THREADEX")
 # my_clouds_networks = c("ASOS", "AWOS", "BUOY", "CMAN", "CoCoRaHS", "COOP", "ECONET", "NCSU", "NOS", "RAWS-MW", "THREADEX", "USCRN")
 # BUOY there's no data coming up
 # CMAN there's no data coming up
 # NCSU there's no data coming up
+# USCRN there's only April-Dec 2016 coming up and locations are in central and western NC
 # CoCoRaHS data get directly from their website see 02_cocorahs_retrieval_script.R
 
 for (n in 1:length(my_clouds_networks)) {
@@ -118,7 +119,7 @@ for (n in 1:length(my_clouds_networks)) {
   data_list <- get_clouds_data(api_key = CLOUDS_API_KEY, 
                                clouds_network = temp_clouds_network, 
                                clouds_var = "precip1m", # accumulated precipitation at 1 m above Earth's surface 
-                               start_date = "20150101", 
+                               start_date = "20141225",
                                end_date = "20161231")
   
   # define data
@@ -138,8 +139,8 @@ for (n in 1:length(my_clouds_networks)) {
   # only export if there's data
   if (dim(data_raw)[1] > 0) {
     # export
-    write_csv(x = data_raw, file = paste0(tabular_data_output_path, "/", str_to_lower(temp_clouds_network), "_data_raw.csv"))
-    write_csv(x = metadata_raw, file = paste0(tabular_data_output_path, "/", str_to_lower(temp_clouds_network), "_metadata_raw.csv"))
+    write_csv(x = data_raw, file = paste0(tabular_data_output_path, "/", str_to_lower(temp_clouds_network), "_data_raw_2014.csv"))
+    write_csv(x = metadata_raw, file = paste0(tabular_data_output_path, "/", str_to_lower(temp_clouds_network), "_metadata_raw_2014.csv"))
     
     # print status
     print(paste0("exported ", temp_clouds_network, " network data"))
