@@ -181,6 +181,7 @@ length(cmu_sel_list)
 cmu_missing <- cmu_bounds_albers %>%
   dplyr::filter(cmu_name %notin% unique(obs_metadata_albers_sel$cmu_name)) %>%
   dplyr::left_join(rainfall_thresh_data, by = "cmu_name") %>%
+  dplyr::select(cmu_name:HA_CLASS) %>%
   dplyr::distinct()
 # note some cmu's are in multiple sga so the length of cmu_missing is > 47
 # can find unique cmu's by looking at HA_CLASS
