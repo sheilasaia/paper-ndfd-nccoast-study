@@ -1,6 +1,6 @@
 # ---- script header ----
 # script name: 09_tidy_obs_ndfd_data_script.R
-# purpose of script: this script combines the observed and ndfd (forecasted) datasets into one
+# purpose of script: this script tidies the obs and ndfd data sets, checks that they can be combined (but does not combine! see next script)
 # author: sheila saia
 # date created: 20210715
 # email: ssaia@ncsu.edu
@@ -38,6 +38,7 @@ ndfd_tabular_data_intput_path <- here::here("data", "tabular", "ndfd_data_tidy")
 
 # path to ndfd tabular outputs
 ndfd_tabular_data_output_path <- here::here("data", "tabular", "ndfd_data_tidy")
+
 
 # ---- load data ----
 # observed data
@@ -77,7 +78,7 @@ obs_data_metadata_join <- obs_data %>%
 
 # check that all are over 90% complete and less than 100%
 # min(obs_data_metadata_join$perc_compl, na.rm = TRUE)
-# 90.15 ok!
+# 90.244 ok!
 # max(obs_data_metadata_join$perc_compl, na.rm = TRUE)
 # 100 ok!
 
@@ -91,11 +92,11 @@ obs_avg_data <- obs_data_metadata_join %>%
                    obs_measurement_count = n()) %>% # keep track of the number of stations being summarized for each day
   dplyr::select(-obs_avg_in) %>% # drop English units
   dplyr::ungroup() %>%
-  dplyr::filter((date > as.Date("2015-01-03")) & (date <= as.Date("2016-12-31")))
+  dplyr::filter((date >= as.Date("2015-01-01")) & (date <= as.Date("2016-12-31")))
 
 # check number of unique cmus
 # length(unique(obs_avg_data$cmu_name))
-# 91 ok!
+# 102 ok!
 
 # cmu and rainfall threshold key
 cmu_rain_thresh_key <- obs_metadata %>%
@@ -106,10 +107,30 @@ cmu_rain_thresh_key <- obs_metadata %>%
 
 
 # ---- wrangling ndfd data ----
+# ndfd date key
+ndfd_data_date_key <- ndfd_data %>%
+  dplyr::select(ndfd_date, date, valid_period_hrs, cmu_name) %>%
+  dplyr::distinct()
+
+# check that each day has three observations (for 24, 48, and 72 hrs)
+ndfd_data_date_check <- ndfd_data_date_key %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(date, cmu_name) %>%
+  dplyr::summarize(count = n()) %>%
+  dplyr::filter(count == 3) %>%
+  dplyr::select(date) %>%
+  dplyr::distinct()
+
+# make it a list
+ndfd_data_date_check_list <- c(ndfd_data_date_check$date)
+# these are the days that have all three valid periods available
+# use this list to remove unwanted dates without enough data available
+
 # calculate the mean 
 ndfd_avg_data <- ndfd_data %>%
-  dplyr::filter((date > as.Date("2015-01-03")) & (date <= as.Date("2016-12-31"))) %>%
   dplyr::ungroup() %>%
+  dplyr::filter(date %in% ndfd_data_date_check_list) %>%
+  dplyr::filter((ndfd_date >= as.Date("2015-01-01")) & (ndfd_date <= as.Date("2016-12-31"))) %>%
   dplyr::group_by(date, valid_period_hrs, cmu_name) %>%
   # use mean to summarize here for both loc- and cmu-based calcs when there are more than one station in a cmu
   # loc calcs can be different but cmu calcs will be the same, mean will take care of both
@@ -126,14 +147,27 @@ ndfd_avg_data <- ndfd_data %>%
                 month_num = as.numeric(month(date)),
                 month_type = case_when(month_num <= 3 | month_num >= 10 ~ "cool",
                                        month_num > 4 | month_num < 10 ~ "warm"),
-                month_type = fct_relevel(month_type, "warm", "cool"))
+                month_type = fct_relevel(month_type, "warm", "cool")) %>%
+  dplyr::select(date, month_chr:month_type, valid_period_hrs, cmu_name, rain_depth_thresh_cm, cmu_pop_perc, cmu_qpf_cm, cmu_closure_perc, ndfd_measurement_count)
 
-# check that each day has three observations (for 24, 48, and 72 hrs)
-ndfd_avg_data_check <- ndfd_avg_data %>%
-  group_by(date, cmu_name) %>%
-  summarize(count = n())
+# check number of unique cmus
+# length(unique(ndfd_avg_data$cmu_name))
+# 102 ok!
+
+# check number of unique days
+# length(unique(ndfd_avg_data$date))
+# 706 (706/731 = 96.58% complete)
+
+# check again for all three valid period just to be sure 
+ndfd_avg_data_date_check <- ndfd_avg_data %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(date, cmu_name) %>%
+  dplyr::summarize(count = n()) %>%
+  dplyr::filter(count != 3)
+# zero long, so all have three valid periods ok!
 
 
 # ---- export data ----
 write_csv(x = obs_avg_data, file = paste0(obs_tabular_data_output_path, "/obs_avg_data.csv"))
+write_csv(x = obs_data_metadata_join, file = paste0(obs_tabular_data_output_path, "/obs_data_metadata_join.csv"))
 write_csv(x = ndfd_avg_data, file = paste0(ndfd_tabular_data_output_path, "/ndfd_avg_data.csv"))
