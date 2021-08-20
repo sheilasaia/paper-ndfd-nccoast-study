@@ -123,7 +123,8 @@ cmu_bounds_shp <- st_read(paste0(ncdmf_spatial_data_input_path, "/cmu_bounds_alb
 # join data and filter for data in 2015-01-04 to 2016-12-31 (start on Jan 4 because of 72 hour window)
 obs_ndfd_data <- ndfd_avg_data %>%
   dplyr::left_join(obs_avg_data, by = c("date", "cmu_name")) %>%
-  dplyr::filter(is.na(obs_measurement_count) == FALSE) # remove rows where there are no observations
+  dplyr::filter(is.na(obs_measurement_count) == FALSE) %>% # remove rows where there are no observations
+  dplyr::mutate(year = year(date))
 
 # check unique cmus
 # length(unique(obs_ndfd_data$cmu_name))
@@ -218,17 +219,15 @@ dev.off()
 cmu_bounds_shp_cm <- cmu_bounds_shp %>%
   dplyr::mutate(rain_cm = rain_in * 2.54)
 
+
+
 # map of cmu rainfall thresholds
-my_cmu_colors <- colorRampPalette(brewer.pal(n = length(unique(cmu_bounds_shp_cm$rain_cm)), name = "BuPu"))
-my_cmu_colors_length <- length(cmu_bounds_shp_cm$rain_cm)
-my_cmu_colors_min <- floor(min(cmu_bounds_shp_cm$rain_cm))
-my_cmu_colors_max <- ceiling(max(cmu_bounds_shp_cm$rain_cm))
+my_cmu_colors <- brewer.pal(n = length(unique(cmu_bounds_shp_cm$rain_cm)), name = "BuPu")
 pdf(paste0(figure_output_path, "/map_cmu_rainfall_thresholds.pdf"), width = 12, height = 10)
 ggplot() +
   # geom_sf(data = nc_bounds_shp, fill = NA) +
-  geom_sf(data = cmu_bounds_shp_cm, aes(fill = rain_cm), alpha = 0.5) +
-  scale_fill_gradientn(colors = my_cmu_colors(my_complete_colors_length), 
-                       limits = c(my_cmu_colors_min, my_cmu_colors_max)) +
+  geom_sf(data = cmu_bounds_shp_cm, aes(fill = as.factor(rain_cm)), color = "black", alpha = 0.75) +
+  scale_fill_manual(values = my_cmu_colors) +
   labs(x = "", y = "", fill = "Rainfall Threshold Depths (cm)") +
   theme_classic()
 dev.off()
@@ -242,6 +241,9 @@ my_validhrs_colors <- c("#66c2a5", "#fc8d62", "#8da0cb")
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_by_valid_period.pdf"), width = 15, height = 5)
 ggplot(data = obs_ndfd_data) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm, fill = as.factor(valid_period_hrs)), shape = 21, alpha = 0.50, size = 3) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  xlim(0, 27) +
+  ylim(0, 27) +
   facet_wrap(~ as.factor(valid_period_hrs)) +
   labs(x = "Forecasted (cm)", y = "Observed (cm)", fill = "Valid Period Hours") +
   theme_classic() +
@@ -258,6 +260,9 @@ dev.off()
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_24hr_by_month.pdf"), width = 12, height = 10)
 ggplot(data = obs_ndfd_data %>% filter(valid_period_hrs == 24)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[1], alpha = 0.50) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  xlim(0, 27) +
+  ylim(0, 27) +
   facet_wrap(~ month_num) +
   labs(x = "Forecasted (cm)", y = "Observed (cm)") +
   theme_classic() +
@@ -273,6 +278,9 @@ dev.off()
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_48hr_by_month.pdf"), width = 12, height = 10)
 ggplot(data = obs_ndfd_data %>% filter(valid_period_hrs == 48)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[2], alpha = 0.50) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  xlim(0, 27) +
+  ylim(0, 27) +
   facet_wrap(~ month_num) +
   labs(x = "Forecasted (cm)", y = "Observed (cm)") +
   theme_classic() +
@@ -288,6 +296,9 @@ dev.off()
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_72hr_by_month.pdf"), width = 12, height = 10)
 ggplot(data = obs_ndfd_data %>% filter(valid_period_hrs == 72)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[3], alpha = 0.50) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  xlim(0, 27) +
+  ylim(0, 27) +
   facet_wrap(~ month_num) +
   labs(x = "Forecasted (cm)", y = "Observed (cm)") +
   theme_classic() +
