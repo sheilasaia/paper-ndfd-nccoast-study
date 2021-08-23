@@ -46,7 +46,7 @@ ncdmf_spatial_data_input_path <- here::here("data", "spatial", "ncdmf_data_tidy"
 figure_output_path <- here::here("figures")
 
 
-# ---- 4. define functions ----
+# ---- define functions ----
 # calculate nse
 # as defined in Moriasi et al. 2007
 calculate_nse <- function(obs_data, frcst_data) {
@@ -144,8 +144,55 @@ valid_period_check <- obs_ndfd_data %>%
 # zero long, so all have three valid periods ok!
 
 
+# ---- confusion matrix analysis ----
+# compare data and define event/non-event and correct/not correct
+compare_events_data <- obs_ndfd_data %>%
+  dplyr::select(date, month_num, month_type, cmu_name, valid_period_hrs, rain_depth_thresh_cm, cmu_qpf_cm, obs_avg_cm) %>%
+  dplyr::mutate(event_type = case_when(obs_avg_cm > 0 & cmu_qpf_cm > 0 ~ "correct_event",
+                                       obs_avg_cm == 0 & cmu_qpf_cm == 0 ~ "correct_no-event",
+                                       obs_avg_cm > 0 & cmu_qpf_cm == 0 ~ "incorrect_event",
+                                       obs_avg_cm == 0 & cmu_qpf_cm > 0 ~ "incorrect_no-event",
+                                       obs_avg_cm >= 0 & is.na(cmu_qpf_cm) == TRUE ~ "no_forecast"))
+
+# find the number of days that don't have a forecast
+length(unique(compare_events_data$date[compare_events_data$event_type == "no_forecast"]))
+# 0 since took all these out beforehand
+
+# max number of days per month key
+month_seq = rep(seq(1,12,1), 2)
+year_seq = c(rep(2015, 12), rep(2016, 12))
+max_days_per_month_key <- data.frame(month = month_seq, year = year_seq) %>%
+  dplyr::mutate(year_month = paste0(as.character(year), "-", as.character(month)),
+                max_num_days = as.numeric(days_in_month(ym(year_month)))) %>%
+  dplyr::select(-year, -month)
+
+# count number of observations per month for each station
+station_monthly_obs_count <- compare_events_data %>%
+  dplyr::filter(event_type != "no_forecast") %>% # there are none but leaving this in for now
+  dplyr::select(date, cmu_name, month_num, valid_period_hrs) %>%
+  dplyr::mutate(year_month = paste0(as.character(year(date)), "-", as.character(month_num))) %>% # recreate this
+  dplyr::ungroup() %>%
+  dplyr::group_by(cmu_name, year_month, valid_period_hrs) %>%
+  dplyr::summarize(num_days_available = n()) %>%
+  # dplyr::left_join(max_days_per_month_key, by = "year_month") %>%
+  # dplyr::mutate(percent_complete = num_days_available/max_num_days)
+  dplyr::select(cmu_name, year_month, valid_period_hrs, num_days_available)
+
+# count number of stations in different event statuses per month
+station_event_type_monthly_summary <- compare_events_data %>%
+  dplyr::filter(event_type != "no_forecast") %>% # there are none but leaving this in for now
+  dplyr::mutate(year_month = paste0(as.character(year(date)), "-", as.character(month_num))) %>% # recreate this
+  dplyr::ungroup() %>%
+  dplyr::group_by(cmu_name, year_month, valid_period_hrs, event_type) %>%
+  dplyr::summarize(num_days = n()) %>%
+  dplyr::left_join(station_monthly_obs_count, by = c("cmu_name", "year_month", "valid_period_hrs")) %>%
+  dplyr::mutate(perc_month = round((num_days/num_days_available) * 100, 2),
+                year = as.numeric(str_sub(string = year_month, start = 1, end = 4)),
+                month = as.numeric(str_sub(string = year_month, start = 6, end = -1)))
+
+
 # ---- obs plots ----
-# set colors for non-urban (green) and urban (yellow)
+# set colors for 2015 (green) and 2016 (yellow)
 my_year_colors = c("#66c2a5", "#ffd92f")
 
 # month key
@@ -185,7 +232,6 @@ ggplot(data = obs_monthly_summary,
         panel.grid.minor = element_blank(),
         panel.background = element_blank())
 dev.off()
-
 
 # map of stations by network
 pdf(paste0(figure_output_path, "/map_station_networks.pdf"), width = 12, height = 10)
@@ -312,3 +358,50 @@ dev.off()
 
 # calculate seasonal nse by cmu
 # calculate 
+
+
+# set colors for 2015 (green) and 2016 (yellow)
+my_year_colors = c("#66c2a5", "#ffd92f")
+
+# plot percent of available monthly data in different event categories
+pdf(paste0(figure_output_path, "/percent_month_vs_event_by_period.pdf"), width = 15, height = 7)
+ggplot() +
+  geom_boxplot(data = station_event_type_monthly_summary, 
+               aes(x = event_type, y = perc_month, fill = as.factor(year)),
+               outlier.color = "black") +
+  geom_abline(slope = 0, intercept = 50, lty = 2) +
+  facet_wrap(~ valid_period_hrs) +
+  labs(x = "Event Occurence Type", y = "Percent of Each Month", fill = "Year") + 
+  scale_fill_manual(values = my_year_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
+# plot percent of available monthly data in different event categories
+pdf(paste0(figure_output_path, "/percent_month_vs_month_by_event_24hr.pdf"), width = 15, height = 7)
+ggplot() +
+  geom_boxplot(data = station_event_type_monthly_summary %>% filter(valid_period_hrs == 24),
+               aes(x = as.factor(month), y = perc_month, fill = as.factor(year)),
+               outlier.color = "black") +
+  geom_abline(slope = 0, intercept = 50, lty = 2) +
+  facet_wrap(~ event_type) +
+  labs(x = "Event Occurence Type", y = "Percent of Each Month", fill = "Year") +
+  scale_fill_manual(values = my_year_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
