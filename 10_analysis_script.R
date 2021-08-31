@@ -285,7 +285,7 @@ my_validhrs_colors <- c("#66c2a5", "#fc8d62", "#8da0cb")
 
 # all data facet by valid period
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_by_valid_period.pdf"), width = 15, height = 5)
-ggplot(data = obs_ndfd_data) +
+ggplot(data = compare_events_data) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm, fill = as.factor(valid_period_hrs)), shape = 21, alpha = 0.50, size = 3) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
   xlim(0, 27) +
@@ -302,9 +302,9 @@ ggplot(data = obs_ndfd_data) +
         panel.background = element_blank())
 dev.off()
 
-# 24 hr valid period
+# 24 hr valid period by month
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_24hr_by_month.pdf"), width = 12, height = 10)
-ggplot(data = obs_ndfd_data %>% filter(valid_period_hrs == 24)) +
+ggplot(data = compare_events_data %>% filter(valid_period_hrs == 24)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[1], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
   xlim(0, 27) +
@@ -320,9 +320,45 @@ ggplot(data = obs_ndfd_data %>% filter(valid_period_hrs == 24)) +
         panel.background = element_blank())
 dev.off()
 
-# 48 hr valid period
+# 24 hr valid period month + event type
+pdf(paste0(figure_output_path, "/obs_vs_ndfd_24hr_by_month_event.pdf"), width = 12, height = 10)
+ggplot(data = compare_events_data %>% filter(valid_period_hrs == 24)) +
+  geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[1], alpha = 0.50) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  xlim(0, 27) +
+  ylim(0, 27) +
+  facet_wrap(~ event_type + month_num, nrow = 4, ncol = 12) +
+  labs(x = "Forecasted (cm)", y = "Observed (cm)") +
+  theme_classic() +
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        text = element_text(size = 10),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())
+dev.off()
+
+# 24 hr valid period month + season
+pdf(paste0(figure_output_path, "/obs_vs_ndfd_24hr_by_month_season.pdf"), width = 12, height = 10)
+ggplot(data = compare_events_data %>% filter(valid_period_hrs == 24)) +
+  geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[1], alpha = 0.50) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  xlim(0, 27) +
+  ylim(0, 27) +
+  facet_wrap(~ month_type + month_num, nrow = 2, ncol = 6) +
+  labs(x = "Forecasted (cm)", y = "Observed (cm)") +
+  theme_classic() +
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        text = element_text(size = 10),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())
+dev.off()
+
+# 48 hr valid period by month
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_48hr_by_month.pdf"), width = 12, height = 10)
-ggplot(data = obs_ndfd_data %>% filter(valid_period_hrs == 48)) +
+ggplot(data = compare_events_data %>% filter(valid_period_hrs == 48)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[2], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
   xlim(0, 27) +
@@ -338,9 +374,45 @@ ggplot(data = obs_ndfd_data %>% filter(valid_period_hrs == 48)) +
         panel.background = element_blank())
 dev.off()
 
-# 72 hr valid period
+# 48 hr valid period by month + event type
+pdf(paste0(figure_output_path, "/obs_vs_ndfd_48hr_by_event.pdf"), width = 12, height = 10)
+ggplot(data = compare_events_data %>% filter(valid_period_hrs == 48)) +
+  geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[2], alpha = 0.50) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  xlim(0, 27) +
+  ylim(0, 27) +
+  facet_wrap(~ event_type + month_num, nrow = 4, ncol = 12) +
+  labs(x = "Forecasted (cm)", y = "Observed (cm)") +
+  theme_classic() +
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        text = element_text(size = 10),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())
+dev.off()
+
+# 48 hr valid period by month + season type
+pdf(paste0(figure_output_path, "/obs_vs_ndfd_48hr_by_season.pdf"), width = 12, height = 10)
+ggplot(data = compare_events_data %>% filter(valid_period_hrs == 48)) +
+  geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[2], alpha = 0.50) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  xlim(0, 27) +
+  ylim(0, 27) +
+  facet_wrap(~ month_type + month_num, nrow = 2, ncol = 6) +
+  labs(x = "Forecasted (cm)", y = "Observed (cm)") +
+  theme_classic() +
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        text = element_text(size = 10),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())
+dev.off()
+
+# 72 hr valid period by month
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_72hr_by_month.pdf"), width = 12, height = 10)
-ggplot(data = obs_ndfd_data %>% filter(valid_period_hrs == 72)) +
+ggplot(data = compare_events_data %>% filter(valid_period_hrs == 72)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[3], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
   xlim(0, 27) +
@@ -351,6 +423,42 @@ ggplot(data = obs_ndfd_data %>% filter(valid_period_hrs == 72)) +
   theme(axis.text = element_text(size = 16),
         axis.title = element_text(size = 16),
         text = element_text(size = 16),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())
+dev.off()
+
+# 72 hr valid period by month + event type
+pdf(paste0(figure_output_path, "/obs_vs_ndfd_72hr_by_month_event.pdf"), width = 12, height = 10)
+ggplot(data = compare_events_data %>% filter(valid_period_hrs == 72)) +
+  geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[3], alpha = 0.50) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  xlim(0, 27) +
+  ylim(0, 27) +
+  facet_wrap(~ event_type + month_num, nrow = 4, ncol = 12) +
+  labs(x = "Forecasted (cm)", y = "Observed (cm)") +
+  theme_classic() +
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        text = element_text(size = 10),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())
+dev.off()
+
+# 72 hr valid period by month + season type
+pdf(paste0(figure_output_path, "/obs_vs_ndfd_72hr_by_month_season.pdf"), width = 12, height = 10)
+ggplot(data = compare_events_data %>% filter(valid_period_hrs == 72)) +
+  geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[3], alpha = 0.50) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  xlim(0, 27) +
+  ylim(0, 27) +
+  facet_wrap(~ month_type + month_num, nrow = 2, ncol = 6) +
+  labs(x = "Forecasted (cm)", y = "Observed (cm)") +
+  theme_classic() +
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        text = element_text(size = 10),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank())
