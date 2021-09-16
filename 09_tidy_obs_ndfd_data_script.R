@@ -166,6 +166,8 @@ ndfd_avg_data_date_check <- ndfd_avg_data %>%
   dplyr::filter(count != 3)
 # zero long, so all have three valid periods ok!
 
+# ndfd_measurement_count and obs_measurement_count are the same (do i need both?)
+
 
 # ---- export data ----
 write_csv(x = obs_avg_data, file = paste0(obs_tabular_data_output_path, "/obs_avg_data.csv"))
