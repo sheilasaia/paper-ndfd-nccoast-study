@@ -23,6 +23,8 @@ library(here)
 library(lubridate)
 library(sf)
 library(RColorBrewer)
+library(forcats)
+library(cutpointr)
 # library(tidylog)
 
 
@@ -265,8 +267,6 @@ dev.off()
 cmu_bounds_shp_cm <- cmu_bounds_shp %>%
   dplyr::mutate(rain_cm = rain_in * 2.54)
 
-
-
 # map of cmu rainfall thresholds
 my_cmu_colors <- brewer.pal(n = length(unique(cmu_bounds_shp_cm$rain_cm)), name = "BuPu")
 pdf(paste0(figure_output_path, "/map_cmu_rainfall_thresholds.pdf"), width = 12, height = 10)
@@ -275,6 +275,52 @@ ggplot() +
   geom_sf(data = cmu_bounds_shp_cm, aes(fill = as.factor(rain_cm)), color = "black", alpha = 0.75) +
   scale_fill_manual(values = my_cmu_colors) +
   labs(x = "", y = "", fill = "Rainfall Threshold Depths (cm)") +
+  theme_classic()
+dev.off()
+
+# wrangle data to join unique cmu and obs counts to cmu spatial data
+cmu_obs_count_data <- obs_ndfd_data %>%
+  dplyr::select(cmu_name, obs_measurement_count) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(cmu_name) %>%
+  dplyr::summarize(min = min(obs_measurement_count),
+                   mean = round(mean(obs_measurement_count), 2),
+                   max = max(obs_measurement_count),
+                   range = (range(obs_measurement_count)[2] - range(obs_measurement_count)[1])) %>%
+  tidyr::pivot_longer(cols = min:range, names_to = "summary_calc") %>%
+  dplyr::mutate(summary_calc = factor(summary_calc, levels = c("min", "mean", "max", "range")))
+  # for each cmu, different days may have different observations counts so take min and max
+
+# plot distributions of these observation counts for each cmu
+pdf(paste0(figure_output_path, "/cmu_num_obs_density.pdf"), width = 10, height = 10)
+ggplot(data = cmu_obs_count_data) +
+  geom_density(aes(x = value), fill = "grey75") +
+  facet_wrap(~ summary_calc) +
+  xlim(0, 15) +
+  labs(x = "Number of Obervations per CMU", y = "Density") +
+  theme_classic() +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())
+dev.off()
+
+# add spatial data
+cmu_obs_count_shp <- cmu_obs_count_data %>%
+  left_join(cmu_bounds_shp_cm, by = "cmu_name")
+
+# map of number of stations per cmu
+pdf(paste0(figure_output_path, "/map_cmu_num_obs.pdf"), width = 12, height = 10)
+ggplot() +
+  # geom_sf(data = nc_bounds_shp, fill = NA) +
+  geom_sf(data = cmu_obs_count_shp %>% dplyr::filter(summary_calc == "mean"), 
+          aes(fill = value), 
+          color = "black", 
+          alpha = 0.75) +
+  #scale_fill_manual(values = my_cmu_colors) +
+  labs(fill = "Average Number of Stations") +
   theme_classic()
 dev.off()
 
