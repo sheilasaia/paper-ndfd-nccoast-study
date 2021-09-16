@@ -95,8 +95,8 @@ hist_precip_data <- read_csv(file = paste0(data_path, "tabular/sheila_generated/
 # ---- 4. functions ----
 # calculate the probability of closure (as a decimal)
 calc_closure_perc <- function(rain_thresh_in, qpf_in, pop_notdecimal) {
-  cloure_perc <- round(pop_notdecimal * exp((-rain_thresh_in/qpf_in)), 2) # percent closure as decimal percent
-  return(cloure_perc)
+  closure_perc <- round(pop_notdecimal * exp((-rain_thresh_in/qpf_in)), 2) # percent closure as decimal percent
+  return(closure_perc)
 }
 
 
