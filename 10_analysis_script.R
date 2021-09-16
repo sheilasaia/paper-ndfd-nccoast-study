@@ -235,10 +235,18 @@ ggplot(data = obs_monthly_summary,
         panel.background = element_blank())
 dev.off()
 
+# map of NC and cmu bounds
+pdf(paste0(figure_output_path, "/nc_context_map.pdf"), width = 12, height = 10)
+ggplot() +
+  geom_sf(data = nc_bounds_shp, fill = "grey75") +
+  geom_sf(data = cmu_bounds_shp, fill = "white") +
+  theme_classic()
+dev.off()
+
 # map of stations by network
 pdf(paste0(figure_output_path, "/map_station_networks.pdf"), width = 12, height = 10)
 ggplot() +
-  # geom_sf(data = nc_bounds_shp, fill = NA) +
+  # geom_sf(data = nc_bounds_shp, fill = "grey75") +
   geom_sf(data = cmu_bounds_shp, fill = NA) +
   geom_sf(data = obs_metadata_shp, 
           aes(fill = network), size = 4, shape = 21, alpha = 0.75) +
