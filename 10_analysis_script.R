@@ -15,6 +15,7 @@
 
 # ---- to do ----
 # to do list: 
+# TODO roc analysis plots (see analysis_roc_script.R for code)
 
 
 # ---- load libraries ----
@@ -36,7 +37,10 @@ obs_tabular_data_input_path <- here::here("data", "tabular", "obs_data_tidy")
 obs_spatial_data_input_path <- here::here("data", "spatial", "obs_data_tidy")
 
 # path to ndfd tabular inputs
-ndfd_tabular_data_intput_path <- here::here("data", "tabular", "ndfd_data_tidy")
+ndfd_tabular_data_input_path <- here::here("data", "tabular", "ndfd_data_tidy")
+
+# path to roc tabular outputs
+roc_tabular_data_output_path <- here::here("data", "tabular", "roc_data")
 
 # path to nc state bounds spatial data
 nc_spatial_data_input_path <- here::here("data", "spatial", "region_state_bounds_tidy")
@@ -49,6 +53,13 @@ figure_output_path <- here::here("figures")
 
 
 # ---- define functions ----
+# calculate the probability of closure (as a decimal)
+calc_closure_perc <- function(rain_thresh, qpf, pop_notdecimal) {
+  # rain_thresh and qpf have to be in the same units!
+  closure_perc <- round(pop_notdecimal * exp((-rain_thresh/qpf)), 2) # percent closure as decimal percent
+  return(closure_perc)
+}
+
 # calculate nse
 # as defined in Moriasi et al. 2007
 calculate_nse <- function(obs_data, frcst_data) {
@@ -112,7 +123,7 @@ obs_data_metadata_join <- read_csv(file = paste0(obs_tabular_data_input_path, "/
 obs_metadata_shp <- st_read(paste0(obs_spatial_data_input_path, "/obs_metadata_albers_sel.shp"))
 
 # ndfd daily data (averaged by cmu)
-ndfd_avg_data <- read_csv(file = paste0(ndfd_tabular_data_intput_path, "/ndfd_avg_data.csv"), col_names = TRUE)
+ndfd_avg_data <- read_csv(file = paste0(ndfd_tabular_data_input_path, "/ndfd_avg_data.csv"), col_names = TRUE)
 
 # nc state bounds
 nc_bounds_shp <- st_read(paste0(nc_spatial_data_input_path, "/nc_bounds_albers.shp"))
@@ -126,7 +137,8 @@ cmu_bounds_shp <- st_read(paste0(ncdmf_spatial_data_input_path, "/cmu_bounds_alb
 obs_ndfd_data <- ndfd_avg_data %>%
   dplyr::left_join(obs_avg_data, by = c("date", "cmu_name")) %>%
   dplyr::filter(is.na(obs_measurement_count) == FALSE) %>% # remove rows where there are no observations
-  dplyr::mutate(year = year(date))
+  dplyr::mutate(year = year(date),
+                precip_binary = if_else(obs_avg_cm >= rain_depth_thresh_cm, 1, 0))
 
 # check unique cmus
 # length(unique(obs_ndfd_data$cmu_name))
@@ -191,6 +203,187 @@ station_event_type_monthly_summary <- compare_events_data %>%
   dplyr::mutate(perc_month = round((num_days/num_days_available) * 100, 2),
                 year = as.numeric(str_sub(string = year_month, start = 1, end = 4)),
                 month = as.numeric(str_sub(string = year_month, start = 6, end = -1)))
+
+
+# ---- roc analysis ----
+# list of unique cmus
+cmu_info_unique <- obs_ndfd_data %>%
+  select(cmu_name, rain_depth_thresh_cm) %>%
+  distinct()
+
+# check if duplicates
+length(unique(cmu_info_unique$cmu_name))
+# 102 checks!
+
+# make an empty dataframe
+roc_calcs_data <- NULL
+
+# number of cmus
+num_cmus <- length(cmu_info_unique$cmu_name)
+
+# number of valid periods
+num_valid_periods <- length(unique(obs_ndfd_data$valid_period_hrs))
+
+# valid period values
+valid_period_list <- unique(obs_ndfd_data$valid_period_hrs)
+
+# run number (counter for row id)
+run_num = 0
+
+# number of bootstrap runs
+num_boot_runs = 500
+
+# record start time
+start_time <- now()
+
+# loop
+for (i in 1:1) { #num_cmus) { # i = cmu_name
+  # pick cmu
+  temp_cmu <- cmu_info_unique$cmu_name[i]
+  
+  # save cmu info
+  temp_cmu_info_unique <- cmu_info_unique %>%
+    filter(cmu_name == temp_cmu)
+  
+  for (j in 1:num_valid_periods) { # j = valid_period_hr
+    # pick valid period
+    temp_valid_period <- valid_period_list[j]
+    
+    # filter data
+    temp_roc_data <- obs_ndfd_data %>%
+      dplyr::filter(cmu_name == temp_cmu & valid_period_hrs == temp_valid_period)
+    
+    # bootstrapped cutpoint results without season subgroup
+    # accuracy metric
+    set.seed(100)
+    temp_result_no_sub_acc_raw <- cutpointr::cutpointr(data = temp_roc_data, x = cmu_closure_perc, class = precip_binary, 
+                                                       direction = ">=", pos_class = 1, neg_class = 0, 
+                                                       boot_runs = num_boot_runs, boot_stratify = TRUE,
+                                                       method = maximize_metric, metric = accuracy, silent = TRUE)
+    temp_result_no_sub_acc_summary <- summary(temp_result_no_sub_acc_raw) %>%
+      dplyr::select(n_obs:n_neg)
+    temp_result_no_sub_acc <- temp_result_no_sub_acc_raw %>%
+      dplyr::mutate(subgroup = "none") %>%
+      dplyr::select(subgroup, direction:boot) %>%
+      dplyr::mutate(metric = "accuracy",
+                    metric_value = accuracy,
+                    cmu_name = temp_cmu,
+                    valid_period_hrs = temp_valid_period,
+                    n_obs = temp_result_no_sub_acc_summary$n_obs,
+                    n_pos = temp_result_no_sub_acc_summary$n_pos,
+                    n_neg = temp_result_no_sub_acc_summary$n_neg) %>%
+      dplyr::select(- accuracy)
+    
+    # cohen's kappa metric
+    set.seed(100)
+    temp_result_no_sub_cohens_raw <- cutpointr::cutpointr(data = temp_roc_data, x = cmu_closure_perc, class = precip_binary, 
+                                                          direction = ">=", pos_class = 1, neg_class = 0, 
+                                                          boot_runs = num_boot_runs, boot_stratify = TRUE,
+                                                          method = maximize_metric, metric = cohens_kappa, silent = TRUE)
+    temp_result_no_sub_cohens_summary <- summary(temp_result_no_sub_cohens_raw) %>%
+      dplyr::select(n_obs:n_neg)
+    temp_result_no_sub_cohens <- temp_result_no_sub_cohens_raw %>%
+      dplyr::mutate(subgroup = "none") %>%
+      dplyr::select(subgroup, direction:boot) %>%
+      dplyr::mutate(metric = "cohens_kappa",
+                    metric_value = cohens_kappa,
+                    cmu_name = temp_cmu,
+                    valid_period_hrs = temp_valid_period,
+                    n_obs = temp_result_no_sub_cohens_summary$n_obs,
+                    n_pos = temp_result_no_sub_cohens_summary$n_pos,
+                    n_neg = temp_result_no_sub_cohens_summary$n_neg) %>%
+      dplyr::select(- cohens_kappa)
+    
+    # bootstrapped cutpoint results with season subgroup
+    # accuracy metric
+    set.seed(100)
+    temp_result_sub_acc_raw <- cutpointr::cutpointr(data = temp_roc_data, x = cmu_closure_perc, class = precip_binary, subgroup = month_type,
+                                                direction = ">=", pos_class = 1, neg_class = 0,
+                                                boot_runs = num_boot_runs, boot_stratify = TRUE,
+                                                method = maximize_metric, metric = accuracy, silent = TRUE)
+    temp_result_sub_acc_summary <- summary(temp_result_sub_acc_raw) %>%
+      dplyr::select(n_obs:n_neg)
+    temp_result_sub_acc <- temp_result_sub_acc_raw %>%
+      dplyr::select(- grouping) %>%
+      dplyr::mutate(metric = "accuracy",
+                    metric_value = accuracy,
+                    cmu_name = temp_cmu,
+                    valid_period_hrs = temp_valid_period,
+                    n_obs = temp_result_sub_acc_summary$n_obs,
+                    n_pos = temp_result_sub_acc_summary$n_pos,
+                    n_neg = temp_result_sub_acc_summary$n_neg) %>%
+      dplyr::select(- accuracy)
+  
+    # cohen's kappa metric
+    set.seed(100)
+    temp_result_sub_cohens_raw <- cutpointr::cutpointr(data = temp_roc_data, x = cmu_closure_perc, class = precip_binary, subgroup = month_type,
+                                                       direction = ">=", pos_class = 1, neg_class = 0,
+                                                       boot_runs = num_boot_runs, boot_stratify = TRUE,
+                                                       method = maximize_metric, metric = cohens_kappa, silent = TRUE)
+    temp_result_sub_cohens_summary <- summary(temp_result_sub_cohens_raw) %>%
+      dplyr::select(n_obs:n_neg)
+    temp_result_sub_cohens <- temp_result_sub_cohens_raw %>%
+      dplyr::select(- grouping) %>%
+      dplyr::mutate(metric = "cohens_kappa",
+                    metric_value = cohens_kappa,
+                    cmu_name = temp_cmu,
+                    valid_period_hrs = temp_valid_period,
+                    n_obs = temp_result_sub_cohens_summary$n_obs,
+                    n_pos = temp_result_sub_cohens_summary$n_pos,
+                    n_neg = temp_result_sub_cohens_summary$n_neg) %>%
+      dplyr::select(- cohens_kappa)
+    
+    # bind all cuptpoint analyses and add in metadata
+    # temp_roc_calcs_data <- bind_rows(temp_result_no_sub_acc, temp_result_no_sub_cohens)
+    
+    # bind all cuptpoint analyses and add in metadata
+    temp_roc_calcs_data <- bind_rows(temp_result_no_sub_acc, temp_result_no_sub_cohens,
+                                     temp_result_sub_acc, temp_result_sub_cohens)
+    
+    # advance counter to assign run number
+    run_num <- run_num + 1
+    
+    # final dataset with run number id joined
+    temp_roc_calcs_data_to_join <- temp_roc_calcs_data %>%
+      dplyr::mutate(run_num_id = rep(run_num, dim(temp_roc_calcs_data)[1])) %>%
+      dplyr::select(run_num_id, subgroup:n_neg)
+    
+    # append data
+    roc_calcs_data <- bind_rows(roc_calcs_data, temp_roc_calcs_data_to_join)
+    
+    # print message
+    print(paste0("appended cmu ", temp_cmu, " ", temp_valid_period, " hr valid period roc results"))
+  }
+}
+
+# print time now
+stop_time <- now()
+
+# time to run loop
+stop_time - start_time
+# ~1 min (on MacBook Air) x 102 cmu's x 3 valid periods = 306 min / 60 = 5.1 hrs
+# actual: ? hours
+
+# export
+saveRDS(roc_calcs_data, file = paste0(roc_tabular_data_output_path, "/roc_calcs_data.rds"))
+
+# to read in use...
+# roc_calcs_data <- readRDS(paste0(data_path, "tabular/sheila_generated/roc_analysis/roc_calcs_data.rds"))
+# DO NOT TRY TO VIEW THIS FILE! RSTUDIO WILL CRASH! :(
+
+# save a copy of the file without the nested tibbles (data, boot, and roc_curve columns)
+roc_calcs_data_small <- roc_calcs_data %>%
+  dplyr::select(run_num_id:predictor, metric:n_neg)
+
+# change inf to 100
+roc_calcs_data_small_fix <- roc_calcs_data_small %>%
+  dplyr::mutate(optimal_cutpoint_fix = if_else(optimal_cutpoint == Inf, 100, optimal_cutpoint),
+                cutpoint_type = if_else(optimal_cutpoint == Inf, "infinite", "definite")) %>%
+  dplyr::left_join(cmu_info_unique, by = "cmu_name")
+
+# export
+write_csv(roc_calcs_data_small_fix, paste0(roc_tabular_data_output_path, "/roc_calcs_data_small_fix.csv"))
+
 
 
 # ---- obs plots ----
@@ -333,7 +526,11 @@ ggplot() +
 dev.off()
 
 
-# ---- analysis plots ----
+# ---- roc analysis plots ----
+
+
+
+# ---- nse analysis plots ----
 # color scale for valid periods
 my_validhrs_colors <- c("#66c2a5", "#fc8d62", "#8da0cb")
 
