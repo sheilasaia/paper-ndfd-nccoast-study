@@ -16,7 +16,7 @@
 # ---- to do ----
 # to do list: 
 # TODO roc analysis plots (see analysis_roc_script.R for code)
-
+# TODO what to do if no positive events? (skip?)
 
 # ---- load libraries ----
 library(tidyverse)
@@ -26,6 +26,7 @@ library(sf)
 library(RColorBrewer)
 library(forcats)
 library(cutpointr)
+library(broom)
 # library(tidylog)
 
 
@@ -105,6 +106,34 @@ calculate_nse <- function(obs_data, frcst_data) {
   # Nan when nse_top and nse_bot are both = 0
 }
 
+# calculate rmse
+calculate_rmse <- function(obs_data, frcst_data) {
+  num_obs <- length(obs_data)
+  rmse_inner <- sum((frcst_data - obs_data)^2) / num_obs
+  rmse <- sqrt(rmse_inner)
+  
+  return(rmse)
+}
+
+
+#calculate r squared
+calculate_r2 <- function(obs_data, frcst_data) {
+  obs_frcst_lm <- lm(obs_data ~ frcst_data)
+  obs_frcst_lm_glance <- broom::glance(obs_frcst_lm)
+  r2 <- round(as.numeric(obs_frcst_lm_glance$r.squared), 3)
+  return(r2)
+}
+
+#calculate p value
+calculate_pval <- function(obs_data, frcst_data) {
+  obs_frcst_lm <- lm(obs_data ~ frcst_data)
+  obs_frcst_lm_glance <- broom::glance(obs_frcst_lm)
+  # obs_frcst_lm_tidy <- broom::tidy(obs_frcst_lm)
+  pval <- round(as.numeric(obs_frcst_lm_glance$p.value), 3)
+  # pval <- round(as.numeric(obs_frcst_lm_tidy$p.value[1]), 3)
+  return(pval)
+}
+
 # calculate the kappa coefficient
 calculate_kappa <- function() {
   
@@ -161,7 +190,7 @@ valid_period_check <- obs_ndfd_data %>%
 # ---- confusion matrix analysis ----
 # compare data and define event/non-event and correct/not correct
 compare_events_data <- obs_ndfd_data %>%
-  dplyr::select(date, month_num, month_type, cmu_name, valid_period_hrs, rain_depth_thresh_cm, cmu_qpf_cm, obs_avg_cm) %>%
+  dplyr::select(date, year, month_num, month_type, cmu_name, valid_period_hrs, rain_depth_thresh_cm, cmu_qpf_cm, cmu_closure_perc, obs_avg_cm, precip_binary) %>%
   dplyr::mutate(event_type = case_when(obs_avg_cm > 0 & cmu_qpf_cm > 0 ~ "correct_event",
                                        obs_avg_cm == 0 & cmu_qpf_cm == 0 ~ "correct_no-event",
                                        obs_avg_cm > 0 & cmu_qpf_cm == 0 ~ "incorrect_event",
@@ -171,6 +200,22 @@ compare_events_data <- obs_ndfd_data %>%
 # find the number of days that don't have a forecast
 length(unique(compare_events_data$date[compare_events_data$event_type == "no_forecast"]))
 # 0 since took all these out beforehand
+
+# check for the number of positive events per cmu per valid period
+pos_events_cmu_validprd_list <- compare_events_data %>%
+  dplyr::filter(obs_avg_cm > 0) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(cmu_name, valid_period_hrs) %>%
+  dplyr::summarize(pos_event_count = n()) %>%
+  dplyr::select(- pos_event_count)
+
+# remove data without events for full period
+compare_events_data_fix <- compare_events_data %>%
+  right_join(pos_events_cmu_validprd_list, by = c("cmu_name", "valid_period_hrs"))
+
+# check number of unique cmus
+length(unique(compare_events_data_fix$cmu_name))
+
 
 # max number of days per month key
 month_seq = rep(seq(1,12,1), 2)
@@ -207,7 +252,7 @@ station_event_type_monthly_summary <- compare_events_data %>%
 
 # ---- roc analysis ----
 # list of unique cmus
-cmu_info_unique <- obs_ndfd_data %>%
+cmu_info_unique <- compare_events_data %>%
   select(cmu_name, rain_depth_thresh_cm) %>%
   distinct()
 
@@ -222,10 +267,10 @@ roc_calcs_data <- NULL
 num_cmus <- length(cmu_info_unique$cmu_name)
 
 # number of valid periods
-num_valid_periods <- length(unique(obs_ndfd_data$valid_period_hrs))
+num_valid_periods <- length(unique(compare_events_data$valid_period_hrs))
 
 # valid period values
-valid_period_list <- unique(obs_ndfd_data$valid_period_hrs)
+valid_period_list <- unique(compare_events_data$valid_period_hrs)
 
 # run number (counter for row id)
 run_num = 0
@@ -250,7 +295,7 @@ for (i in 1:1) { #num_cmus) { # i = cmu_name
     temp_valid_period <- valid_period_list[j]
     
     # filter data
-    temp_roc_data <- obs_ndfd_data %>%
+    temp_roc_data <- compare_events_data %>%
       dplyr::filter(cmu_name == temp_cmu & valid_period_hrs == temp_valid_period)
     
     # bootstrapped cutpoint results without season subgroup
@@ -384,6 +429,40 @@ roc_calcs_data_small_fix <- roc_calcs_data_small %>%
 # export
 write_csv(roc_calcs_data_small_fix, paste0(roc_tabular_data_output_path, "/roc_calcs_data_small_fix.csv"))
 
+
+# ---- ndfd vs obs analysis ----
+
+test_data <- compare_events_data %>% filter(valid_period_hrs == 72 & cmu_name == "U079")
+
+test_nse <- calculate_nse(obs_data = test_data$obs_avg_cm, frcst_data = test_data$cmu_qpf_cm)
+test_rmse <- calculate_rmse(obs_data = test_data$obs_avg_cm, frcst_data = test_data$cmu_qpf_cm)
+test_r2 <- calculate_r2(obs_data = test_data$obs_avg_cm, frcst_data = test_data$cmu_qpf_cm)
+test_pval <- calculate_pval(obs_data = test_data$obs_avg_cm, frcst_data = test_data$cmu_qpf_cm)
+
+
+eval_results_by_valid_period <- compare_events_data %>%
+  ungroup() %>%
+  group_by(valid_period_hrs) %>%
+  summarize(r2 = calculate_r2(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            pval = calculate_pval(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            rmse = calculate_rmse(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            num_obs = n())
+
+eval_results_by_month_valid_period <- compare_events_data %>%
+  ungroup() %>%
+  group_by(valid_period_hrs, month_num) %>%
+  summarize(r2 = calculate_r2(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            pval = calculate_pval(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            rmse = calculate_rmse(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            num_obs = n())
+
+eval_results_by_cmu_valid_period <- compare_events_data %>%
+  ungroup() %>%
+  group_by(valid_period_hrs, cmu_name) %>%
+  summarize(r2 = calculate_r2(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            pval = calculate_pval(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            rmse = calculate_rmse(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            num_obs = n())
 
 
 # ---- obs plots ----
@@ -530,7 +609,7 @@ dev.off()
 
 
 
-# ---- nse analysis plots ----
+# ---- ndfd vs obs analysis plots ----
 # color scale for valid periods
 my_validhrs_colors <- c("#66c2a5", "#fc8d62", "#8da0cb")
 
