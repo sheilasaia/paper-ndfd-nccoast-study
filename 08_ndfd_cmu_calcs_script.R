@@ -15,6 +15,7 @@
 
 # TODO need to add in cmu, lease, and other tidy data scripts before this one
 # TODO remove mention of roc here for now
+# TODO remove cmus with no events by valid period for the full range of time
 
 # ---- 1. load libraries ----
 library(tidyverse)
