@@ -128,7 +128,8 @@ obs_data_compiled <- bind_rows(cocorahs_data_raw,
   #precip_month_acc_in = as.numeric(value_accum)) %>%
   dplyr::select(loc_id, date, precip_in) %>% # , precip_month_acc_in) %>%
   dplyr::arrange(loc_id, date)
-# Input `precip_in` is `as.numeric(value)`. error because there are some characters in the value column - these will become NA's which is fine
+# Input `precip_in` is `as.numeric(value)`. error because there are some characters in the value column - these will become NA's
+# this is fine because these characters are indicating that the data is poor quality and should be removed anyway
 
 #compile and tidy up metadata
 obs_metadata_compiled <- bind_rows(cocorahs_metadata_raw,
