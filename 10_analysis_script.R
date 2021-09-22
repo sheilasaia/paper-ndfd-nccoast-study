@@ -216,6 +216,20 @@ compare_events_data_fix <- compare_events_data %>%
 # check number of unique cmus
 length(unique(compare_events_data_fix$cmu_name))
 
+# find cmu where there are no events (rainfall > 0 cm) for the full 2015-2016 period by valid period
+cmu_info_unique <- obs_avg_data %>%
+  dplyr::select(cmu_name) %>%
+  dplyr::distinct()
+
+no_obs_data_cmu_list <- obs_avg_data %>%
+  dplyr::filter(obs_avg_cm > 0) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(cmu_name, valid_period_hrs) %>%
+  dplyr::summarize(num_events = n())
+
+# this could be due to provisional data (see script 03_combine_obs_data_script.R for note on data QC scores)
+# in some cases score was provisional but zeros were given for full 2015-2016 record
+
 
 # max number of days per month key
 month_seq = rep(seq(1,12,1), 2)
