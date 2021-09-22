@@ -129,7 +129,9 @@ obs_data_compiled <- bind_rows(cocorahs_data_raw,
   dplyr::select(loc_id, date, precip_in) %>% # , precip_month_acc_in) %>%
   dplyr::arrange(loc_id, date)
 # Input `precip_in` is `as.numeric(value)`. error because there are some characters in the value column - these will become NA's
-# this is fine because these characters are indicating that the data is poor quality and should be removed anyway
+# this is fine because the characters "QCF" (for score = 2 and score = 3) are indicating that the data is poor quality and should be removed anyway
+# scores: 0 (good), 1 (likely good), 2 (likely bad), or 3 (bad). A QC score of -1 indicates a pending QC score. "NA" indicates no QC is available.
+# score key from: https://api.climate.ncsu.edu/help
 
 #compile and tidy up metadata
 obs_metadata_compiled <- bind_rows(cocorahs_metadata_raw,
