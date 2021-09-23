@@ -13,8 +13,6 @@
 # ---- to do ----
 # to do list
 
-# TODO going to need to compile all datasets here (not just cocorahs)
-
 
 # ---- 1. load libraries ----
 library(tidyverse)
@@ -56,13 +54,21 @@ obs_precip_data_completeness <- obs_precip_data %>%
   na.omit() %>% # if you don't add this NA cell will be counted in n()
   dplyr::group_by(loc_id) %>%
   dplyr::summarize(count = n(),
-                   perc_compl = round((count/number_of_days) * 100, digits = 3)) %>%
-  dplyr::select(loc_id, perc_compl)
+                   num_events = sum(precip_in != 0),
+                   perc_rec = round((count/number_of_days) * 100, digits = 3), # number of missing days in 2015-2016 record
+                   perc_evt = round((num_events/number_of_days) * 100, digits = 3)) %>% # number of non-zero events (precip_in > 0) in 2015-2016 period
+  dplyr::select(loc_id, perc_rec, perc_evt)
+
+# location sites that have no events
+# find cmu's where there are no events (rainfall = 0 cm) for the full 2015-2016 period by valid period
+# this is due to provisional data (see script 03_combine_obs_data_script.R for note on data QC scores)
+# in some cases score was provisional but zeros were given for full 2015-2016 record
 
 # join completeness with metadata
 obs_precip_metadata_completeness <- obs_precip_metadata %>%
   dplyr::left_join(obs_precip_data_completeness, by = "loc_id") %>%
-  dplyr::mutate(perc_compl = if_else(is.na(perc_compl), 0, perc_compl))
+  dplyr::mutate(perc_rec = if_else(is.na(perc_rec), 0, perc_rec),
+                perc_evt = if_else(is.na(perc_evt), 0, perc_evt))
 
 
 # ---- make tabular data spatial ----

@@ -14,8 +14,7 @@
 # to do list
 
 # TODO need to add in cmu, lease, and other tidy data scripts before this one
-# TODO remove mention of roc here for now
-# TODO remove cmus with no events by valid period for the full range of time
+
 
 # ---- 1. load libraries ----
 library(tidyverse)
@@ -146,8 +145,8 @@ cmu_bounds_sel_5kmbuf <- cmu_bounds_sel %>%
 # ---- 6. find precip data that overlaps ----
 obs_metadata_albers_sel <- obs_metadata_albers %>%
   st_intersection(cmu_bounds_sel_5kmbuf) %>%
-  dplyr::filter(perc_compl >= 90) # filter out ones that are 90% complete or more
-# without the buffer there are no rain gages within the cmus
+  dplyr::filter((perc_rec >= 90) & (perc_evt != 0)) # filter out ones that have a 90% or more record and that record is not all non-events (precip_in = 0)
+# without the buffer there are no rain gauges within the cmus
 
 # plot cmus and observations
 # pdf(file = here::here("figures", "cmu_selection_with_obs_fullanalysis.pdf"), width = 10, height = 10)
@@ -160,21 +159,22 @@ obs_metadata_albers_sel <- obs_metadata_albers %>%
 
 # number of unique stations
 length(unique(obs_metadata_albers_sel$loc_id))
-# new is 54
+# new is 36 (with non-event stations removed, was 54)
 
 # total number of stations
 length(unique(obs_metadata_albers$loc_id))
 # 1779
  
-# number of unique cmus
+# number of unique cmus in selection
 length(unique(obs_metadata_albers_sel$cmu_name))
-# 102
+# 88
 
-# total number of cmus
+# total number of cmus available from ncdmf
 length(cmu_sel_list)
 # 149
 
-# so we have 102/149 (68%) cmu's represented based on available observed rainfall data
+# so we have 88/149 (59%) cmu's represented based on available observed rainfall data
+# before taking out non-event data it was 102/149 (68%)
 
 # what cmu's are not represented in this analysis?
 # these missing cmu's do not have enough observation data available for analysis
@@ -189,7 +189,7 @@ cmu_missing <- cmu_bounds_albers %>%
   
 # check for uniqueness and total
 length(unique(cmu_missing$HA_CLASS))
-# 47 + 102 = 149
+# 61 + 88 = 149 ok!
 
 
 # ---- 7. loop through ndfd data to get forecast result ----

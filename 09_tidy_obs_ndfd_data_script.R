@@ -12,8 +12,10 @@
 
 # ---- to do ----
 # to do list:
+# TODO rerun ndfd data wrangling section after running non-event fix
 # TODO move functions into separate file
 # TODO fix function so it has checks for units and data types (decimal, etc.)
+
 
 # ---- load libraries ----
 library(tidyverse)
@@ -65,7 +67,7 @@ calc_closure_perc <- function(rain_thresh_depth, qpf, pop_notdecimal) {
 # drop geometry and save only columns that are needed 
 obs_metadata <- obs_metadata_shp %>%
   st_drop_geometry() %>%
-  dplyr::select(loc_id, network, perc_compl, cmu_name:rain_lab)
+  dplyr::select(loc_id, network, perc_rec, perc_evt, cmu_name:rain_lab)
 
 # join metadata and observations
 obs_data_metadata_join <- obs_data %>%
@@ -74,13 +76,19 @@ obs_data_metadata_join <- obs_data %>%
 
 # check number of unique cmus
 # length(unique(obs_data_metadata_join$cmu_name))
-# 102 ok!
+# 88 ok!
 
-# check that all are over 90% complete and less than 100%
-# min(obs_data_metadata_join$perc_compl, na.rm = TRUE)
-# 90.244 ok!
-# max(obs_data_metadata_join$perc_compl, na.rm = TRUE)
-# 100 ok!
+# look at perc_evt and perc_rec to make sure they are ok
+# ok!
+
+# make list of unique cmu's
+cmu_info_unique <- obs_data_metadata_join %>%
+  dplyr::select(loc_id, cmu_name) %>%
+  dplyr::distinct()
+
+# check unique cmu's
+# length(unique(cmu_info_unique$cmu_name))
+# 88 ok!
 
 # take average by cmu and date
 obs_avg_data <- obs_data_metadata_join %>%
@@ -96,7 +104,7 @@ obs_avg_data <- obs_data_metadata_join %>%
 
 # check number of unique cmus
 # length(unique(obs_avg_data$cmu_name))
-# 102 ok!
+# 88 ok!
 
 # cmu and rainfall threshold key
 cmu_rain_thresh_key <- obs_metadata %>%
