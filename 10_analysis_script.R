@@ -61,6 +61,49 @@ calc_closure_perc <- function(rain_thresh, qpf, pop_notdecimal) {
   return(closure_perc)
 }
 
+# calculate rmse
+calculate_rmse <- function(obs_data, frcst_data) {
+  num_obs <- length(obs_data)
+  rmse_inner <- sum((frcst_data - obs_data)^2) / num_obs
+  rmse <- sqrt(rmse_inner)
+  
+  return(rmse)
+}
+
+#calculate r squared
+calculate_r2 <- function(obs_data, frcst_data) {
+  obs_frcst_lm <- lm(obs_data ~ frcst_data)
+  obs_frcst_lm_glance <- broom::glance(obs_frcst_lm)
+  r2 <- round(as.numeric(obs_frcst_lm_glance$r.squared), 3)
+  return(r2)
+}
+
+#calculate p value
+calculate_pval <- function(obs_data, frcst_data) {
+  obs_frcst_lm <- lm(obs_data ~ frcst_data)
+  obs_frcst_lm_glance <- broom::glance(obs_frcst_lm)
+  # obs_frcst_lm_tidy <- broom::tidy(obs_frcst_lm)
+  pval <- round(as.numeric(obs_frcst_lm_glance$p.value), 3)
+  # pval <- round(as.numeric(obs_frcst_lm_tidy$p.value[1]), 3)
+  return(pval)
+}
+
+# calculate slope
+calculate_slope <- function(obs_data, frcst_data) {
+  obs_frcst_lm <- lm(obs_data ~ frcst_data)
+  obs_frcst_lm_tidy <- broom::tidy(obs_frcst_lm)
+  slope <- round(obs_frcst_lm_tidy$estimate[2], 3)
+  return(slope)
+}
+
+# calculate intercept
+calculate_intercept <- function(obs_data, frcst_data) {
+  obs_frcst_lm <- lm(obs_data ~ frcst_data)
+  obs_frcst_lm_tidy <- broom::tidy(obs_frcst_lm)
+  intercept <- round(obs_frcst_lm_tidy$estimate[2], 3)
+  return(intercept)
+}
+
 # calculate nse
 # as defined in Moriasi et al. 2007
 calculate_nse <- function(obs_data, frcst_data) {
@@ -104,34 +147,6 @@ calculate_nse <- function(obs_data, frcst_data) {
   # ranges from -Inf to 1 with 1 being perfect fit, values between 0 and 1 are acceptable
   # -Inf when nse_top = postive number and nse_bot = 0
   # Nan when nse_top and nse_bot are both = 0
-}
-
-# calculate rmse
-calculate_rmse <- function(obs_data, frcst_data) {
-  num_obs <- length(obs_data)
-  rmse_inner <- sum((frcst_data - obs_data)^2) / num_obs
-  rmse <- sqrt(rmse_inner)
-  
-  return(rmse)
-}
-
-
-#calculate r squared
-calculate_r2 <- function(obs_data, frcst_data) {
-  obs_frcst_lm <- lm(obs_data ~ frcst_data)
-  obs_frcst_lm_glance <- broom::glance(obs_frcst_lm)
-  r2 <- round(as.numeric(obs_frcst_lm_glance$r.squared), 3)
-  return(r2)
-}
-
-#calculate p value
-calculate_pval <- function(obs_data, frcst_data) {
-  obs_frcst_lm <- lm(obs_data ~ frcst_data)
-  obs_frcst_lm_glance <- broom::glance(obs_frcst_lm)
-  # obs_frcst_lm_tidy <- broom::tidy(obs_frcst_lm)
-  pval <- round(as.numeric(obs_frcst_lm_glance$p.value), 3)
-  # pval <- round(as.numeric(obs_frcst_lm_tidy$p.value[1]), 3)
-  return(pval)
 }
 
 # calculate the kappa coefficient
@@ -186,6 +201,18 @@ valid_period_check <- obs_ndfd_data %>%
   dplyr::filter(count != 3)
 # zero long, so all have three valid periods ok!
 
+# check that cmu's have at least some events
+# this was an issue, see script 04_convert_obs_data_to_spatial_script.R and
+# script 08_ndfd_cmu_calcs_script.R for more info
+event_check <- obs_ndfd_data %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(cmu_name, valid_period_hrs) %>%
+  dplyr::summarize(num_events = sum(obs_avg_cm == 0))
+
+# check unique cmu's
+# length(unique(event_check$cmu_name))
+# 88 ok
+
 
 # ---- confusion matrix analysis ----
 # compare data and define event/non-event and correct/not correct
@@ -200,36 +227,6 @@ compare_events_data <- obs_ndfd_data %>%
 # find the number of days that don't have a forecast
 length(unique(compare_events_data$date[compare_events_data$event_type == "no_forecast"]))
 # 0 since took all these out beforehand
-
-# check for the number of positive events per cmu per valid period
-pos_events_cmu_validprd_list <- compare_events_data %>%
-  dplyr::filter(obs_avg_cm > 0) %>%
-  dplyr::ungroup() %>%
-  dplyr::group_by(cmu_name, valid_period_hrs) %>%
-  dplyr::summarize(pos_event_count = n()) %>%
-  dplyr::select(- pos_event_count)
-
-# remove data without events for full period
-compare_events_data_fix <- compare_events_data %>%
-  right_join(pos_events_cmu_validprd_list, by = c("cmu_name", "valid_period_hrs"))
-
-# check number of unique cmus
-length(unique(compare_events_data_fix$cmu_name))
-
-# find cmu where there are no events (rainfall > 0 cm) for the full 2015-2016 period by valid period
-cmu_info_unique <- obs_avg_data %>%
-  dplyr::select(cmu_name) %>%
-  dplyr::distinct()
-
-no_obs_data_cmu_list <- obs_avg_data %>%
-  dplyr::filter(obs_avg_cm > 0) %>%
-  dplyr::ungroup() %>%
-  dplyr::group_by(cmu_name, valid_period_hrs) %>%
-  dplyr::summarize(num_events = n())
-
-# this could be due to provisional data (see script 03_combine_obs_data_script.R for note on data QC scores)
-# in some cases score was provisional but zeros were given for full 2015-2016 record
-
 
 # max number of days per month key
 month_seq = rep(seq(1,12,1), 2)
@@ -265,15 +262,6 @@ station_event_type_monthly_summary <- compare_events_data %>%
 
 
 # ---- roc analysis ----
-# list of unique cmus
-cmu_info_unique <- compare_events_data %>%
-  select(cmu_name, rain_depth_thresh_cm) %>%
-  distinct()
-
-# check if duplicates
-length(unique(cmu_info_unique$cmu_name))
-# 102 checks!
-
 # make an empty dataframe
 roc_calcs_data <- NULL
 
@@ -296,7 +284,7 @@ num_boot_runs = 500
 start_time <- now()
 
 # loop
-for (i in 1:1) { #num_cmus) { # i = cmu_name
+for (i in 1:num_cmus) { # i = cmu_name
   # pick cmu
   temp_cmu <- cmu_info_unique$cmu_name[i]
   
@@ -420,7 +408,7 @@ stop_time <- now()
 
 # time to run loop
 stop_time - start_time
-# ~1 min (on MacBook Air) x 102 cmu's x 3 valid periods = 306 min / 60 = 5.1 hrs
+# ~2.5 min (on MacBook Air) x 102 cmu's x 3 valid periods = 765 min / 60 = 12.75 hrs
 # actual: ? hours
 
 # export
@@ -445,21 +433,14 @@ write_csv(roc_calcs_data_small_fix, paste0(roc_tabular_data_output_path, "/roc_c
 
 
 # ---- ndfd vs obs analysis ----
-
-test_data <- compare_events_data %>% filter(valid_period_hrs == 72 & cmu_name == "U079")
-
-test_nse <- calculate_nse(obs_data = test_data$obs_avg_cm, frcst_data = test_data$cmu_qpf_cm)
-test_rmse <- calculate_rmse(obs_data = test_data$obs_avg_cm, frcst_data = test_data$cmu_qpf_cm)
-test_r2 <- calculate_r2(obs_data = test_data$obs_avg_cm, frcst_data = test_data$cmu_qpf_cm)
-test_pval <- calculate_pval(obs_data = test_data$obs_avg_cm, frcst_data = test_data$cmu_qpf_cm)
-
-
 eval_results_by_valid_period <- compare_events_data %>%
   ungroup() %>%
   group_by(valid_period_hrs) %>%
   summarize(r2 = calculate_r2(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
             pval = calculate_pval(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
             rmse = calculate_rmse(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            slope = calculate_slope(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            intercept = calculate_intercept(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
             num_obs = n())
 
 eval_results_by_month_valid_period <- compare_events_data %>%
@@ -468,6 +449,8 @@ eval_results_by_month_valid_period <- compare_events_data %>%
   summarize(r2 = calculate_r2(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
             pval = calculate_pval(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
             rmse = calculate_rmse(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            slope = calculate_slope(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            intercept = calculate_intercept(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
             num_obs = n())
 
 eval_results_by_cmu_valid_period <- compare_events_data %>%
@@ -476,17 +459,30 @@ eval_results_by_cmu_valid_period <- compare_events_data %>%
   summarize(r2 = calculate_r2(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
             pval = calculate_pval(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
             rmse = calculate_rmse(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            slope = calculate_slope(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
+            intercept = calculate_intercept(obs_data = obs_avg_cm, frcst_data = cmu_qpf_cm),
             num_obs = n())
 
 
 # ---- obs plots ----
+# get cmu bounding box
+cmu_bbox <- cmu_bounds_shp %>%
+  st_buffer(dist = 10000) %>% # buffer distance is in m so 10 * 1000m = 10km
+  st_bbox()
+
+# crop nc bounds data to cmu bounds
+nc_bounds_shp_cropped <- nc_bounds_shp %>%
+  st_crop(xmin = as.numeric(cmu_bbox[1]), 
+          xmax = as.numeric(cmu_bbox[3]),
+          ymin = as.numeric(cmu_bbox[2]), 
+          ymax = as.numeric(cmu_bbox[4]))
+
 # set colors for 2015 (green) and 2016 (yellow)
 my_year_colors = c("#66c2a5", "#ffd92f")
 
 # month key
-obs_month_key <- obs_data_metadata_join %>%
+obs_month_key <- compare_events_data %>%
   dplyr::select(date) %>%
-  dplyr::filter((date >= as.Date("2015-01-01")) & (date <= as.Date("2016-12-31"))) %>%
   dplyr::mutate(month_num = as.numeric(month(date)),
                 month_chr = fct_relevel(as.character(month(date, label = TRUE)), 
                                         c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")),
@@ -497,12 +493,13 @@ obs_month_key <- obs_data_metadata_join %>%
 
 # calculate monthly sum by station
 obs_monthly_summary <- obs_data_metadata_join %>%
+  dplyr::right_join(cmu_info_unique, by = "cmu_name") %>% # remove cmu's without events
   dplyr::filter((date >= as.Date("2015-01-01")) & (date <= as.Date("2016-12-31"))) %>%
   dplyr::mutate(month_num = as.numeric(month(date)),
                 year_num = as.numeric(year(date))) %>%
   dplyr::ungroup() %>%
   dplyr::group_by(loc_id, month_num, year_num) %>%
-  dplyr::summarize(precip_monthly_cm = sum(precip_in))
+  dplyr::summarize(precip_monthly_cm = sum(precip_in) * 2.54)
 
 # plot observed monthly total precip at each station
 pdf(paste0(figure_output_path, "/obs_precip_vs_month.pdf"), width = 12, height = 10)
@@ -524,37 +521,46 @@ dev.off()
 # map of NC and cmu bounds
 pdf(paste0(figure_output_path, "/nc_context_map.pdf"), width = 12, height = 10)
 ggplot() +
-  geom_sf(data = nc_bounds_shp, fill = "grey75") +
+  geom_sf(data = nc_bounds_shp, fill = "grey80") +
   geom_sf(data = cmu_bounds_shp, fill = "white") +
-  theme_classic()
+  theme_classic() +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16))
 dev.off()
 
 # map of stations by network
 pdf(paste0(figure_output_path, "/map_station_networks.pdf"), width = 12, height = 10)
 ggplot() +
-  # geom_sf(data = nc_bounds_shp, fill = "grey75") +
-  geom_sf(data = cmu_bounds_shp, fill = NA) +
+  geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
+  geom_sf(data = cmu_bounds_shp, fill = "white") +
   geom_sf(data = obs_metadata_shp, 
           aes(fill = network), size = 4, shape = 21, alpha = 0.75) +
   labs(x = "", y = "", fill = "Network") +
-  theme_classic()
+  theme_classic() +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16))
 dev.off()
 
 # map of stations by completeness
 my_complete_colors <- colorRampPalette(brewer.pal(n = 5, name = "BuPu"))
-my_complete_colors_length <- length(obs_metadata_shp$perc_compl)
-my_complete_colors_min <- floor(min(obs_metadata_shp$perc_compl))
+my_complete_colors_length <- length(obs_metadata_shp$perc_rec)
+my_complete_colors_min <- floor(min(obs_metadata_shp$perc_rec))
 my_complete_colors_max <- 100
 pdf(paste0(figure_output_path, "/map_station_completness.pdf"), width = 12, height = 10)
 ggplot() +
-  # geom_sf(data = nc_bounds_shp, fill = NA) +
-  geom_sf(data = cmu_bounds_shp, fill = NA) +
+  geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
+  geom_sf(data = cmu_bounds_shp, fill = "white") +
   geom_sf(data = obs_metadata_shp, 
-          aes(fill = perc_compl), size = 4, shape = 21, alpha = 0.75) +
+          aes(fill = perc_rec), size = 4, shape = 21, alpha = 0.75) +
   scale_fill_gradientn(colors = my_complete_colors(my_complete_colors_length), 
                        limits = c(my_complete_colors_min, my_complete_colors_max)) +
   labs(x = "", y = "", fill = "Percent Complete (%)") +
-  theme_classic()
+  theme_classic() +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16))
 dev.off()
 
 # calculate rainfall threshold depths in cm
@@ -565,12 +571,34 @@ cmu_bounds_shp_cm <- cmu_bounds_shp %>%
 my_cmu_colors <- brewer.pal(n = length(unique(cmu_bounds_shp_cm$rain_cm)), name = "BuPu")
 pdf(paste0(figure_output_path, "/map_cmu_rainfall_thresholds.pdf"), width = 12, height = 10)
 ggplot() +
-  # geom_sf(data = nc_bounds_shp, fill = NA) +
+  geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
   geom_sf(data = cmu_bounds_shp_cm, aes(fill = as.factor(rain_cm)), color = "black", alpha = 0.75) +
   scale_fill_manual(values = my_cmu_colors) +
+  # coord_sf(datum = st_crs(5070)) +
   labs(x = "", y = "", fill = "Rainfall Threshold Depths (cm)") +
-  theme_classic()
+  theme_classic() +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16))
 dev.off()
+
+# zoomed map of cmu rainfall thresholds
+pdf(paste0(figure_output_path, "/map_cmu_rainfall_thresholds_zoom.pdf"), width = 12, height = 10)
+ggplot() +
+  geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
+  geom_sf(data = cmu_bounds_shp_cm, aes(fill = as.factor(rain_cm)), color = "black", alpha = 0.75) +
+  coord_sf(xlim = c(1600000, 1770000), ylim = c(1350000, 1500000), expand = FALSE) +
+  scale_fill_manual(values = my_cmu_colors) +
+  labs(x = "", y = "", fill = "Rainfall Threshold Depths (cm)") +
+  theme_classic() +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16))
+dev.off()
+
+# map of conditionally approved and approved cmus
+# need to bind cmu data with sga_bounds_class_albers.shp to get ga_classes associated with cmu's
+
 
 # wrangle data to join unique cmu and obs counts to cmu spatial data
 cmu_obs_count_data <- obs_ndfd_data %>%
@@ -588,7 +616,7 @@ cmu_obs_count_data <- obs_ndfd_data %>%
 # plot distributions of these observation counts for each cmu
 pdf(paste0(figure_output_path, "/cmu_num_obs_density.pdf"), width = 10, height = 10)
 ggplot(data = cmu_obs_count_data) +
-  geom_density(aes(x = value), fill = "grey75") +
+  geom_density(aes(x = value), fill = "grey80") +
   facet_wrap(~ summary_calc) +
   xlim(0, 15) +
   labs(x = "Number of Obervations per CMU", y = "Density") +
@@ -608,7 +636,7 @@ cmu_obs_count_shp <- cmu_obs_count_data %>%
 # map of number of stations per cmu
 pdf(paste0(figure_output_path, "/map_cmu_num_obs.pdf"), width = 12, height = 10)
 ggplot() +
-  # geom_sf(data = nc_bounds_shp, fill = NA) +
+  geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
   geom_sf(data = cmu_obs_count_shp %>% dplyr::filter(summary_calc == "mean"), 
           aes(fill = value), 
           color = "black", 
@@ -618,6 +646,9 @@ ggplot() +
   theme_classic()
 dev.off()
 
+# plot number of events per cmu for the period of study
+obs_ndfd_data_sel
+
 
 # ---- roc analysis plots ----
 
@@ -626,6 +657,10 @@ dev.off()
 # ---- ndfd vs obs analysis plots ----
 # color scale for valid periods
 my_validhrs_colors <- c("#66c2a5", "#fc8d62", "#8da0cb")
+
+# format annotations
+my_validhrs_eval_text <- eval_results_by_valid_period %>%
+# see https://stackoverflow.com/questions/11889625/annotating-text-on-individual-facet-in-ggplot2
 
 # all data facet by valid period
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_by_valid_period.pdf"), width = 15, height = 5)
