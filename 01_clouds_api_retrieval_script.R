@@ -74,10 +74,7 @@
 
 # ---- to do ----
 # to do list:
-# TODO regenerate api key (hash) code for api (not sure what this means now...?)
 # TODO make tests in case data isn't available and nothing to append or too much to append
-# TODO use here package for paths - hard coding them for now
-# TODO check difference bewteen precip1m and precip variables
 
 
 # ---- 1. load libraries and set paths ----
