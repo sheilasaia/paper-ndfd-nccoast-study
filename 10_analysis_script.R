@@ -16,7 +16,6 @@
 # ---- to do ----
 # to do list: 
 # TODO roc analysis plots (see analysis_roc_script.R for code)
-# TODO what to do if no positive events? (skip?)
 
 # ---- load libraries ----
 library(tidyverse)
@@ -65,7 +64,7 @@ calc_closure_perc <- function(rain_thresh, qpf, pop_notdecimal) {
 calculate_rmse <- function(obs_data, frcst_data) {
   num_obs <- length(obs_data)
   rmse_inner <- sum((frcst_data - obs_data)^2) / num_obs
-  rmse <- sqrt(rmse_inner)
+  rmse <- round(sqrt(rmse_inner), 3)
   
   return(rmse)
 }
@@ -150,10 +149,8 @@ calculate_nse <- function(obs_data, frcst_data) {
 }
 
 # calculate the kappa coefficient
-calculate_kappa <- function() {
-  
-  
-}
+# calculate_kappa <- function() {
+# }
 
 
 # ---- load data ----
@@ -186,12 +183,12 @@ obs_ndfd_data <- ndfd_avg_data %>%
 
 # check unique cmus
 # length(unique(obs_ndfd_data$cmu_name))
-# 102 ok!
+# 88 ok!
 
 # check for na's
 # sum(is.na(obs_ndfd_data$cmu_qpf_cm))
 # sum(is.na(obs_ndfd_data$obs_avg_cm))
-# 0 means no na's
+# 0 means no na's ok!
 
 # check that each cmu for each day has 3 observations (for 24, 48, and 72 hr valid periods)
 valid_period_check <- obs_ndfd_data %>%
@@ -211,7 +208,7 @@ event_check <- obs_ndfd_data %>%
 
 # check unique cmu's
 # length(unique(event_check$cmu_name))
-# 88 ok
+# 88 ok!
 
 
 # ---- confusion matrix analysis ----
@@ -264,6 +261,11 @@ station_event_type_monthly_summary <- compare_events_data %>%
 # ---- roc analysis ----
 # make an empty dataframe
 roc_calcs_data <- NULL
+
+# make list of unique cmu's
+cmu_info_unique <- compare_events_data %>%
+  dplyr::select(cmu_name) %>%
+  dplyr::distinct()
 
 # number of cmus
 num_cmus <- length(cmu_info_unique$cmu_name)
@@ -408,7 +410,7 @@ stop_time <- now()
 
 # time to run loop
 stop_time - start_time
-# ~2.5 min (on MacBook Air) x 102 cmu's x 3 valid periods = 765 min / 60 = 12.75 hrs
+# ~1 min (on MacBook Air) x 88 cmu's for 3 valid periods = 88 min / 60 = 1.5 hrs
 # actual: ? hours
 
 # export
@@ -425,7 +427,7 @@ roc_calcs_data_small <- roc_calcs_data %>%
 # change inf to 100
 roc_calcs_data_small_fix <- roc_calcs_data_small %>%
   dplyr::mutate(optimal_cutpoint_fix = if_else(optimal_cutpoint == Inf, 100, optimal_cutpoint),
-                cutpoint_type = if_else(optimal_cutpoint == Inf, "infinite", "definite")) %>%
+                cutpoint_type = if_else(optimal_cutpoint == Inf | n_pos == 0, "infinite", "definite")) %>%
   dplyr::left_join(cmu_info_unique, by = "cmu_name")
 
 # export
@@ -651,6 +653,252 @@ obs_ndfd_data_sel
 
 
 # ---- roc analysis plots ----
+# set colors for 2015 (green) and 2016 (yellow)
+my_year_colors = c("#66c2a5", "#ffd92f")
+
+# plot percent of available monthly data in different event categories
+pdf(paste0(figure_output_path, "/percent_month_vs_event_by_period.pdf"), width = 15, height = 7)
+ggplot() +
+  geom_boxplot(data = station_event_type_monthly_summary, 
+               aes(x = event_type, y = perc_month, fill = as.factor(year)),
+               outlier.color = "black") +
+  geom_abline(slope = 0, intercept = 50, lty = 2) +
+  facet_wrap(~ valid_period_hrs) +
+  labs(x = "Event Occurence Type", y = "Percent of Each Month", fill = "Year") + 
+  scale_fill_manual(values = my_year_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
+# color scale for valid periods
+my_validhrs_colors <- c("#66c2a5", "#fc8d62", "#8da0cb")
+
+# plot percent of available monthly data in different event categories (all valid periods, no years)
+pdf(paste0(figure_output_path, "/percent_month_vs_month_by_event_by_validprdhrs_no_years.pdf"), width = 15, height = 7)
+ggplot() +
+  geom_boxplot(data = station_event_type_monthly_summary,
+               aes(x = as.factor(month), y = perc_month, fill = as.factor(valid_period_hrs)),
+               outlier.color = "black") +
+  geom_abline(slope = 0, intercept = 50, lty = 2) +
+  facet_wrap(~ event_type) +
+  labs(x = "Event Occurence Type", y = "Percent of Each Month", fill = "Valid Period Hours") +
+  scale_fill_manual(values = my_validhrs_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
+# plot percent of available monthly data in different event categories (24 hrs)
+pdf(paste0(figure_output_path, "/percent_month_vs_month_by_event_24hr.pdf"), width = 15, height = 7)
+ggplot() +
+  geom_boxplot(data = station_event_type_monthly_summary %>% filter(valid_period_hrs == 24),
+               aes(x = as.factor(month), y = perc_month, fill = as.factor(year)),
+               outlier.color = "black") +
+  geom_abline(slope = 0, intercept = 50, lty = 2) +
+  facet_wrap(~ event_type) +
+  labs(x = "Event Occurence Type", y = "Percent of Each Month", fill = "Year") +
+  scale_fill_manual(values = my_year_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
+# plot percent of available monthly data in different event categories (48 hrs)
+pdf(paste0(figure_output_path, "/percent_month_vs_month_by_event_48hr.pdf"), width = 15, height = 7)
+ggplot() +
+  geom_boxplot(data = station_event_type_monthly_summary %>% filter(valid_period_hrs == 48),
+               aes(x = as.factor(month), y = perc_month, fill = as.factor(year)),
+               outlier.color = "black") +
+  geom_abline(slope = 0, intercept = 50, lty = 2) +
+  facet_wrap(~ event_type) +
+  labs(x = "Event Occurence Type", y = "Percent of Each Month", fill = "Year") +
+  scale_fill_manual(values = my_year_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
+# plot percent of available monthly data in different event categories (72 hrs)
+pdf(paste0(figure_output_path, "/percent_month_vs_month_by_event_72hr.pdf"), width = 15, height = 7)
+ggplot() +
+  geom_boxplot(data = station_event_type_monthly_summary %>% filter(valid_period_hrs == 72),
+               aes(x = as.factor(month), y = perc_month, fill = as.factor(year)),
+               outlier.color = "black") +
+  geom_abline(slope = 0, intercept = 50, lty = 2) +
+  facet_wrap(~ event_type) +
+  labs(x = "Event Occurence Type", y = "Percent of Each Month", fill = "Year") +
+  scale_fill_manual(values = my_year_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
+# cutpoint by valid period (based on cohens kappa)
+# minus infinate results
+test3 <- roc_calcs_data_small_fix %>%
+  dplyr::filter(cutpoint_type == "definite" & metric == "cohens_kappa") %>%
+  dplyr::mutate(subgroup = fct_relevel(subgroup, 
+                                       c("none", "warm", "cool")))
+pdf(paste0(figure_output_path, "/roc_cutpoint_by_valid.pdf"), width = 12, height = 10)
+ggplot() +
+  geom_boxplot(data = test3,
+               aes(x = subgroup, y = optimal_cutpoint_fix, fill = as.factor(valid_period_hrs)),
+               outlier.color = "black") +
+  ylim(0, 100) +
+  labs(x = "ROC Group", y = "Closure Cutpoint (based on Cohen's Kappa)", fill = "Valid Period Hours") +
+  scale_fill_manual(values = my_validhrs_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
+# accuracy by valid period
+# minus infinate results
+test1 <- roc_calcs_data_small_fix %>%
+  dplyr::filter(cutpoint_type == "definite" & metric == "accuracy") %>%
+  dplyr::mutate(subgroup = fct_relevel(subgroup, 
+                                       c("none", "warm", "cool")))
+pdf(paste0(figure_output_path, "/roc_accuracy_by_valid.pdf"), width = 12, height = 10)
+ggplot() +
+  geom_boxplot(data = test1,
+               aes(x = subgroup, y = metric_value, fill = as.factor(valid_period_hrs)),
+               outlier.color = "black") +
+  labs(x = "ROC Group", y = "Accuracy", fill = "Valid Period Hours") +
+  scale_fill_manual(values = my_validhrs_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
+# cohens kappa by valid period
+# minus infinate results
+test2 <- roc_calcs_data_small_fix %>%
+  dplyr::filter(cutpoint_type == "definite" & metric == "cohens_kappa") %>%
+  dplyr::mutate(subgroup = fct_relevel(subgroup, 
+                                       c("none", "warm", "cool")))
+pdf(paste0(figure_output_path, "/roc_cohens_by_valid.pdf"), width = 12, height = 10)
+ggplot() +
+  geom_boxplot(data = test2,
+               aes(x = subgroup, y = metric_value, fill = as.factor(valid_period_hrs)),
+               outlier.color = "black") +
+  labs(x = "ROC Group", y = "Cohen's Kappa", fill = "Valid Period Hours") +
+  scale_fill_manual(values = my_validhrs_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
+# sensitivity by valid period (based on cohens kappa)
+pdf(paste0(figure_output_path, "/roc_sens_by_valid.pdf"), width = 12, height = 10)
+ggplot() +
+  geom_boxplot(data = test3,
+               aes(x = subgroup, y = sensitivity, fill = as.factor(valid_period_hrs)),
+               outlier.color = "black") +
+  ylim(0, 1) +
+  labs(x = "ROC Group", y = "Sensitivity aka TPR\n(based on Cohen's Kappa)", fill = "Valid Period Hours") +
+  scale_fill_manual(values = my_validhrs_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
+# specificity by valid period (based on cohens kappa)
+pdf(paste0(figure_output_path, "/roc_specif_by_valid.pdf"), width = 12, height = 10)
+ggplot() +
+  geom_boxplot(data = test3,
+               aes(x = subgroup, y = (1-specificity), fill = as.factor(valid_period_hrs)),
+               outlier.color = "black") +
+  ylim(0, 0.1) +
+  labs(x = "ROC Group", y = "(1 - Specificity) aka FPR\n(based on Cohen's Kappa)", fill = "Valid Period Hours") +
+  scale_fill_manual(values = my_validhrs_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
+
+# TRP vs FRP by valid period (based on cohens kappa)
+pdf(paste0(figure_output_path, "/roc_tprvsfpr_by_valid.pdf"), width = 15, height = 5)
+ggplot() +
+  geom_point(data = test3,
+               aes(x = (1-specificity), y = sensitivity, fill = as.factor(valid_period_hrs)), 
+                   shape = 21, alpha = 0.50, size = 3) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  xlim(0, 1) +
+  ylim(0, 1) +
+  facet_wrap(~ as.factor(valid_period_hrs)) +
+  labs(x = "False Positive Rate (1-Specificity)", y = "True Positive Rate (Sensitivity)", fill = "Valid Period Hours") +
+  scale_fill_manual(values = my_validhrs_colors) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())#,
+#legend.position = "none")
+dev.off()
 
 
 
@@ -658,15 +906,17 @@ obs_ndfd_data_sel
 # color scale for valid periods
 my_validhrs_colors <- c("#66c2a5", "#fc8d62", "#8da0cb")
 
-# format annotations
+# format annotations for results vs valid period
 my_validhrs_eval_text <- eval_results_by_valid_period %>%
-# see https://stackoverflow.com/questions/11889625/annotating-text-on-individual-facet-in-ggplot2
+  dplyr::mutate(label = paste0("R-squared = ", r2, "\nSlope = ", slope, "\nRMSE = ", rmse)) %>%
+  dplyr::select(valid_period_hrs, label)
 
 # all data facet by valid period
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_by_valid_period.pdf"), width = 15, height = 5)
 ggplot(data = compare_events_data) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm, fill = as.factor(valid_period_hrs)), shape = 21, alpha = 0.50, size = 3) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
+  geom_text(data = my_validhrs_eval_text, mapping = aes(x = 20, y = 27, label = label), hjust = 1.0, vjust = 1.0) +
   xlim(0, 27) +
   ylim(0, 27) +
   facet_wrap(~ as.factor(valid_period_hrs)) +
@@ -681,11 +931,18 @@ ggplot(data = compare_events_data) +
         panel.background = element_blank())
 dev.off()
 
+# format annotations for 24 hrs by month
+my_24hr_validhrs_month_eval_text <- eval_results_by_month_valid_period %>%
+  dplyr::filter(valid_period_hrs == 24) %>%
+  dplyr::mutate(label = paste0("R-squared = ", r2, "\nSlope = ", slope, "\nRMSE = ", rmse)) %>%
+  dplyr::select(valid_period_hrs, month_num, label)
+
 # 24 hr valid period by month
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_24hr_by_month.pdf"), width = 12, height = 10)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 24)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[1], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
+  geom_text(data = my_24hr_validhrs_month_eval_text, mapping = aes(x = 20, y = 27, label = label), hjust = 1.0, vjust = 1.0) +
   xlim(0, 27) +
   ylim(0, 27) +
   facet_wrap(~ month_num) +
@@ -735,11 +992,18 @@ ggplot(data = compare_events_data %>% filter(valid_period_hrs == 24)) +
         panel.background = element_blank())
 dev.off()
 
+# format annotations for 48 hrs by month
+my_48hr_validhrs_month_eval_text <- eval_results_by_month_valid_period %>%
+  dplyr::filter(valid_period_hrs == 48) %>%
+  dplyr::mutate(label = paste0("R-squared = ", r2, "\nSlope = ", slope, "\nRMSE = ", rmse)) %>%
+  dplyr::select(valid_period_hrs, month_num, label)
+
 # 48 hr valid period by month
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_48hr_by_month.pdf"), width = 12, height = 10)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 48)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[2], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
+  geom_text(data = my_48hr_validhrs_month_eval_text, mapping = aes(x = 20, y = 27, label = label), hjust = 1.0, vjust = 1.0) +
   xlim(0, 27) +
   ylim(0, 27) +
   facet_wrap(~ month_num) +
@@ -789,11 +1053,18 @@ ggplot(data = compare_events_data %>% filter(valid_period_hrs == 48)) +
         panel.background = element_blank())
 dev.off()
 
+# format annotations for 48 hrs by month
+my_72hr_validhrs_month_eval_text <- eval_results_by_month_valid_period %>%
+  dplyr::filter(valid_period_hrs == 72) %>%
+  dplyr::mutate(label = paste0("R-squared = ", r2, "\nSlope = ", slope, "\nRMSE = ", rmse)) %>%
+  dplyr::select(valid_period_hrs, month_num, label)
+
 # 72 hr valid period by month
 pdf(paste0(figure_output_path, "/obs_vs_ndfd_72hr_by_month.pdf"), width = 12, height = 10)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 72)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[3], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
+  geom_text(data = my_72hr_validhrs_month_eval_text, mapping = aes(x = 20, y = 27, label = label), hjust = 1.0, vjust = 1.0) +
   xlim(0, 27) +
   ylim(0, 27) +
   facet_wrap(~ month_num) +
@@ -847,48 +1118,5 @@ dev.off()
 # calculate 
 
 
-# set colors for 2015 (green) and 2016 (yellow)
-my_year_colors = c("#66c2a5", "#ffd92f")
 
-# plot percent of available monthly data in different event categories
-pdf(paste0(figure_output_path, "/percent_month_vs_event_by_period.pdf"), width = 15, height = 7)
-ggplot() +
-  geom_boxplot(data = station_event_type_monthly_summary, 
-               aes(x = event_type, y = perc_month, fill = as.factor(year)),
-               outlier.color = "black") +
-  geom_abline(slope = 0, intercept = 50, lty = 2) +
-  facet_wrap(~ valid_period_hrs) +
-  labs(x = "Event Occurence Type", y = "Percent of Each Month", fill = "Year") + 
-  scale_fill_manual(values = my_year_colors) +
-  theme_classic() +
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 16),
-        text = element_text(size = 16),
-        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank())#,
-#legend.position = "none")
-dev.off()
-
-# plot percent of available monthly data in different event categories
-pdf(paste0(figure_output_path, "/percent_month_vs_month_by_event_24hr.pdf"), width = 15, height = 7)
-ggplot() +
-  geom_boxplot(data = station_event_type_monthly_summary %>% filter(valid_period_hrs == 24),
-               aes(x = as.factor(month), y = perc_month, fill = as.factor(year)),
-               outlier.color = "black") +
-  geom_abline(slope = 0, intercept = 50, lty = 2) +
-  facet_wrap(~ event_type) +
-  labs(x = "Event Occurence Type", y = "Percent of Each Month", fill = "Year") +
-  scale_fill_manual(values = my_year_colors) +
-  theme_classic() +
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 16),
-        text = element_text(size = 16),
-        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank())#,
-#legend.position = "none")
-dev.off()
 
