@@ -160,7 +160,7 @@ ndfd_avg_data <- ndfd_data %>%
 
 # check number of unique cmus
 # length(unique(ndfd_avg_data$cmu_name))
-# 102 ok!
+# 88 ok!
 
 # check number of unique days
 # length(unique(ndfd_avg_data$date))
