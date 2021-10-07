@@ -472,6 +472,16 @@ cmu_bbox <- cmu_bounds_shp %>%
   st_buffer(dist = 10000) %>% # buffer distance is in m so 10 * 1000m = 10km
   st_bbox()
 
+# get lat long of cmu_bbox
+# crs_wgs84 <- 4326
+# cmu_bbox_wgs84 <- cmu_bounds_shp %>%
+#   st_buffer(dist = 10000) %>%
+#   st_transform(crs = crs_wgs84) %>%
+#   st_bbox()
+# cmu_bbox_wgs84
+#  xmin      ymin      xmax      ymax 
+# -78.60738  33.76421 -75.35710  36.06080 
+
 # crop nc bounds data to cmu bounds
 nc_bounds_shp_cropped <- nc_bounds_shp %>%
   st_crop(xmin = as.numeric(cmu_bbox[1]), 
