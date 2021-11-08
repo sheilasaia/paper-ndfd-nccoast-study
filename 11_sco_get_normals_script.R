@@ -106,7 +106,7 @@ plot(normals_precip_raster_albers)
 # pull data for observations locations
 normals_annual_precip_vals <- obs_metadata_shp %>%
   dplyr::select(loc_id) %>% 
-  dplyr::mutate(normal_annual_precip_cm = round((raster::extract(normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+  dplyr::mutate(normals_annual_precip_cm = round((raster::extract(normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
 
 # plot to check
 ggplot(data = normals_annual_precip_vals) +
@@ -157,7 +157,7 @@ for (i in 1:num_months) {
   temp_normals_precip_cm <- data.frame(round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
   
   # rename column name
-  names(temp_normals_precip_cm) <- eval(paste0("normals_month_precip_mm_", i_chr))
+  names(temp_normals_precip_cm) <- eval(paste0("normals_month_precip_cm_", i_chr))
   
   # bind column
   normals_month_precip_vals <- bind_cols(normals_month_precip_vals, temp_normals_precip_cm)
@@ -166,9 +166,31 @@ for (i in 1:num_months) {
   print(paste0("finished month ", i_chr))
 }
 
+# summarize all months
+normals_month_precip_summary <- normals_month_precip_vals %>%
+  sf::st_drop_geometry() %>%
+  tidyr::pivot_longer(cols = normals_month_precip_cm_01:normals_month_precip_cm_12,
+                      names_to = "month",
+                      values_to = "normals_monthly_precip_cm") %>%
+  dplyr::mutate(month_num = as.numeric(str_sub(string = month, start = -2, end = -1))) %>%
+  dplyr::select(-month) %>%
+  dplyr::group_by(month_num) %>%
+  dplyr::summarize(normals_monthly_area_mean_precip_cm = mean(normals_monthly_precip_cm))
 
+# check
+sum(normals_month_precip_summary$normals_monthly_area_mean_precip_cm)
+# 145 cm which is about equal to the annual value
 
+# summarize for annual data
+normals_annual_precip_summary <- normals_annual_precip_vals %>%
+  dplyr::distinct() %>%
+  sf::st_drop_geometry() %>%
+  dplyr::ungroup() %>%
+  dplyr::summarize(normals_annual_area_mean_precip_mm = mean(normals_annual_precip_cm))
 
+# get value
+normals_annual_precip_summary$normals_annual_area_mean_precip_mm
+# 142.91 cm
 
 
 
