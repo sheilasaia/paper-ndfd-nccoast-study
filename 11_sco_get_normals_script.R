@@ -166,7 +166,8 @@ for (i in 1:num_months) {
   print(paste0("finished month ", i_chr))
 }
 
-# summarize all months
+# ---- summarize monthly and annual normals ----
+# summarize monthly normals
 normals_month_precip_summary <- normals_month_precip_vals %>%
   sf::st_drop_geometry() %>%
   tidyr::pivot_longer(cols = normals_month_precip_cm_01:normals_month_precip_cm_12,
@@ -181,7 +182,7 @@ normals_month_precip_summary <- normals_month_precip_vals %>%
 sum(normals_month_precip_summary$normals_monthly_area_mean_precip_cm)
 # 145 cm which is about equal to the annual value
 
-# summarize for annual data
+# summarize for annual normals
 normals_annual_precip_summary <- normals_annual_precip_vals %>%
   dplyr::distinct() %>%
   sf::st_drop_geometry() %>%
@@ -192,6 +193,8 @@ normals_annual_precip_summary <- normals_annual_precip_vals %>%
 normals_annual_precip_summary$normals_annual_area_mean_precip_mm
 # 142.91 cm
 
-
+# ---- export monthly normals ----
+# export file
+write_csv(x = normals_month_precip_summary, file = here::here("data", "tabular", "roc_data", "normals_monthly_precip_summary.csv"))
 
 
