@@ -1,5 +1,5 @@
 # ---- script header ----
-# script name: 10_analysis_script.R
+# script name: 11_analysis_script.R
 # purpose of script: combines ndfd and obs data and do paper analysis
 # author:
 # date created:
@@ -16,6 +16,8 @@
 # ---- to do ----
 # to do list: 
 # TODO roc analysis plots (see analysis_roc_script.R for code)
+# TODO don't really need obs_metadata_compiled.csv here --> can just use obs_data_compiled.csv
+
 
 # ---- load libraries ----
 library(tidyverse)
@@ -38,6 +40,10 @@ obs_spatial_data_input_path <- here::here("data", "spatial", "obs_data_tidy")
 
 # path to ndfd tabular inputs
 ndfd_tabular_data_input_path <- here::here("data", "tabular", "ndfd_data_tidy")
+
+# path to normals data input path
+normals_tabular_data_input_path <- here::here("data", "tabular", "normals_data_tidy")
+# 142.91 cm is annual normal value for these sites
 
 # path to roc tabular outputs
 roc_tabular_data_output_path <- here::here("data", "tabular", "roc_data")
@@ -159,6 +165,9 @@ obs_avg_data <- read_csv(file = paste0(obs_tabular_data_input_path, "/obs_avg_da
 
 # obs daily (all) and metadata joined
 obs_data_metadata_join <- read_csv(file = paste0(obs_tabular_data_input_path, "/obs_data_metadata_join.csv"), col_names = TRUE)
+
+# normals data
+normals_month_precip_summary <- read_csv(file = paste0(normals_tabular_data_input_path, "/normals_month_precip_summary.csv"), col_names = TRUE)
 
 # obs daily metadata shapefile
 obs_metadata_shp <- st_read(paste0(obs_spatial_data_input_path, "/obs_metadata_albers_sel.shp"))
@@ -467,6 +476,11 @@ eval_results_by_cmu_valid_period <- compare_events_data %>%
 
 
 # ---- obs plots ----
+# make list of unique cmu's
+cmu_info_unique <- compare_events_data %>%
+  dplyr::select(cmu_name) %>%
+  dplyr::distinct()
+
 # get cmu bounding box
 cmu_bbox <- cmu_bounds_shp %>%
   st_buffer(dist = 10000) %>% # buffer distance is in m so 10 * 1000m = 10km
@@ -505,7 +519,8 @@ obs_month_key <- compare_events_data %>%
 
 # calculate monthly sum by station
 obs_monthly_summary <- obs_data_metadata_join %>%
-  dplyr::right_join(cmu_info_unique, by = "cmu_name") %>% # remove cmu's without events
+  dplyr::select(loc_id, date, precip_in, cmu_name) %>% # strip off metadata
+  dplyr::distinct(loc_id, date, .keep_all = TRUE) %>%
   dplyr::filter((date >= as.Date("2015-01-01")) & (date <= as.Date("2016-12-31"))) %>%
   dplyr::mutate(month_num = as.numeric(month(date)),
                 year_num = as.numeric(year(date))) %>%
@@ -515,11 +530,15 @@ obs_monthly_summary <- obs_data_metadata_join %>%
 
 # plot observed monthly total precip at each station
 pdf(paste0(figure_output_path, "/obs_precip_vs_month.pdf"), width = 12, height = 10)
-ggplot(data = obs_monthly_summary, 
-       aes(x = as.factor(month_num), y = precip_monthly_cm, fill = as.factor(year_num))) +
-  geom_boxplot() +
-  geom_point(aes(fill = as.factor(year_num)), size = 2, shape = 21, position = position_jitterdodge(), alpha = 0.50) +
+ggplot() +
+  geom_boxplot(data = obs_monthly_summary, 
+               mapping = aes(x = as.factor(month_num), y = precip_monthly_cm, fill = as.factor(year_num))) +
+  geom_point(data = obs_monthly_summary, 
+             mapping = aes(x = as.factor(month_num), y = precip_monthly_cm, fill = as.factor(year_num)), size = 2, shape = 21, position = position_jitterdodge(), alpha = 0.50) +
+  geom_point(data = normals_month_precip_summary,
+             mapping = aes(x = as.factor(month_num), y = normals_monthly_area_mean_precip_cm), shape = 17, size = 3, fill = "black") +
   scale_fill_manual(values = my_year_colors) +
+  ylim(0, 50) +
   labs(x = "Month", y = "Monthly Observed Precipitation (cm)", fill = "Year") +
   theme_classic() +
   theme(axis.text = element_text(size = 16),

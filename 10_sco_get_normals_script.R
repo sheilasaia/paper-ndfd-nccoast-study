@@ -1,5 +1,5 @@
 # ---- script header ----
-# script name: 11_sco_get_normals_script.R
+# script name: 10_sco_get_normals_script.R
 # purpose of script: pulling data from normals
 # author:
 # date created:
@@ -110,7 +110,7 @@ normals_annual_precip_vals <- obs_metadata_shp %>%
 
 # plot to check
 ggplot(data = normals_annual_precip_vals) +
-  geom_sf(aes(color = normal_annual_precip_cm))
+  geom_sf(aes(color = normals_annual_precip_cm))
 
 
 # ---- get (prism) monthly 30yr normals ----
@@ -153,7 +153,7 @@ for (i in 1:num_months) {
                                                              crs = conus_albers_proj, 
                                                              res = normals_res)
   
-  # extract data for each station
+  # extract data for each station and convert from mm to cm
   temp_normals_precip_cm <- data.frame(round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
   
   # rename column name
@@ -181,6 +181,7 @@ normals_month_precip_summary <- normals_month_precip_vals %>%
 # check
 sum(normals_month_precip_summary$normals_monthly_area_mean_precip_cm)
 # 145 cm which is about equal to the annual value
+# Wilmington, NC gets 58 in = 147 cm per year (according to Google https://www.bestplaces.net/climate/city/north_carolina/wilmington)
 
 # summarize for annual normals
 normals_annual_precip_summary <- normals_annual_precip_vals %>%
@@ -195,6 +196,6 @@ normals_annual_precip_summary$normals_annual_area_mean_precip_mm
 
 # ---- export monthly normals ----
 # export file
-write_csv(x = normals_month_precip_summary, file = here::here("data", "tabular", "roc_data", "normals_monthly_precip_summary.csv"))
+write_csv(x = normals_month_precip_summary, file = here::here("data", "tabular", "normals_data_tidy", "normals_month_precip_summary.csv"))
 
 
