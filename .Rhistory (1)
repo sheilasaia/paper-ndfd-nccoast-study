@@ -1,0 +1,512 @@
+normals_annual_data
+dlname <- ncatt_get(normals_annual_data, "tmp", "long_name")
+image(lon, lat, normals_ppt_data)
+# ppt array
+normals_annual_ppt_data <- ncvar_get(normals_annual_data, "ppt")
+# annual ppt data
+normals_annual_ppt_data <- ncvar_get(normals_annual_data, "ppt")
+# make a raster
+normals_ppt_raster <- raster::raster(normals_annual_data)
+# make a raster
+normals_ppt_raster <- raster::raster(normals_annual_url)
+min(normals_lon)
+# define extent
+normals_xmin <- min(normals_lon)
+normals_xmax <- max(normals_lon)
+normals_ymin <- min(normals_lat)
+normals_ymax <- max(normals_lat)
+normals_extent <- raster::extent(c(normals_xmin, normals_xmax, normals_ymax, normals_ymax))
+normals_extent
+normals_lat <- ncvar_get(normals_annual_data, "latitude")
+normals_ymin <- min(normals_lat)
+normals_ymax <- max(normals_lat)
+normals_extent <- raster::extent(c(normals_xmin, normals_xmax, normals_ymin, normals_ymax))
+normals_extent
+# make a raster
+normals_ppt_raster <- raster::raster(x = normals_annual_ppt_data,
+ext = normals_extent,
+crs = "+proj=longlat +datum=WGS84")
+normals_extent
+class(normals_extent)
+raster::raster(x = normals_annual_ppt_data,
+ext = normals_extent,
+crs = "+proj=longlat +datum=WGS84")
+# make a raster
+normals_ppt_raster <- raster::raster(x = normals_annual_ppt_data,
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+plot(normals_ppt_raster)
+res(normals_ppt_raster)
+normals_xmin
+# define extent
+normals_xmin <- abs(min(normals_lon))
+normals_xmax <- abs(max(normals_lon))
+normals_xmin
+normals_xmax
+normals_xmin
+# make a raster
+normals_ppt_raster <- raster::raster(x = normals_annual_ppt_data,
+xmn = normals_xmax,
+xmx = normals_xmin,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+normals_ppt_raster <-
+# get annual normals
+normal_ppt_annual_ras <- brick(x = "https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_annual.nc",
+varname = "ppt",
+crs = "+proj=longlat +datum=WGS84")
+plot(normals_ppt_raster)
+# make a raster
+normals_ppt_raster <- raster::raster(x = normals_annual_ppt_data,
+xmn = normals_xmax,
+xmx = normals_xmin,
+ymn = normals_ymax,
+ymx = normals_ymin,
+crs = "+proj=longlat +datum=WGS84")
+plot(normals_ppt_raster)
+# make a raster
+normals_ppt_raster <- raster::raster(x = normals_annual_ppt_data,
+xmn = normals_xmax,
+xmx = normals_xmin,
+ymn = normals_ymax,
+ymx = normals_ymin,
+crs = "+proj=longlat +datum=WGS84")
+plot(normals_ppt_raster)
+normals_ymin
+normals_ymax
+e
+e
+# make a raster
+normals_ppt_raster <- raster::raster(x = normals_annual_ppt_data,
+xmn = normals_xmax,
+xmx = normals_xmin,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+plot(normals_ppt_raster)
+# make a raster
+normals_ppt_raster <- raster::raster(x = normals_annual_ppt_data,
+xmn = normals_xmax,
+xmx = normals_xmin,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+plot(normals_ppt_raster)
+# make a raster
+normals_ppt_raster <- raster::raster(x = normals_annual_ppt_data,
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+plot(normals_ppt_raster)
+# define extent
+normals_xmin <- min(normals_lon)
+normals_xmax <- max(normals_lon)
+normals_ymin <- min(normals_lat)
+normals_ymax <- max(normals_lat)
+# make a raster
+normals_ppt_raster <- raster::raster(x = normals_annual_ppt_data,
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+plot(normals_ppt_raster)
+# define url
+normals_annual_url <- "https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_annual.nc"
+# open nc data from url
+normals_annual_data <- nc_open(normals_annual_url)
+normals_annual_data
+# get longitude and latitude
+normals_lon <- ncvar_get(normals_annual_data, "longitude")
+normals_lat <- ncvar_get(normals_annual_data, "latitude")
+# define extent
+normals_xmin <- min(normals_lon)
+normals_xmax <- max(normals_lon)
+normals_ymin <- min(normals_lat)
+normals_ymax <- max(normals_lat)
+# get dimensions of longitude and latitude
+nlon <- dim(normals_lon)
+nlat <- dim(normals_lat)
+print(c(nlon,nlat))
+# annual ppt data
+normals_annual_ppt_data <- ncvar_get(normals_annual_data, "ppt")
+# make a raster
+normals_ppt_raster <- raster::raster(x = normals_annual_ppt_data,
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+plot(normals_ppt_raster)
+normals_ppt_raster <- raster::rasterImage(image = as.raster(normals_annual_ppt_data),
+xleft = normals_xmin,
+xright = normals_xmax,
+ybottom = normals_ymin,
+ytop = normals_ymax)
+normals_xmin
+normals_xmax
+normals_ymin
+normals_ymax
+# make a raster
+normals_ppt_raster <- raster::raster(x = normals_annual_ppt_data,
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+plot(normals_ppt_raster)
+t(normals_annual_ppt_data)
+# make a raster
+normals_ppt_raster <- raster::raster(x = t(normals_annual_ppt_data),
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+plot(normals_ppt_raster)
+# define epsg and proj for CONUS Albers Equal Area projection (projecting to this)
+# conus_albers_epsg <- 5070
+conus_albers_proj <- "+init=EPSG:5070"
+# resolution
+normals_res <- 4*1000 # 4km by 4km in m = 4000
+# convert to albers
+normals_ppt_raster_albers <- raster::projectRaster(normals_ppt_raster,
+crs = conus_albers_proj,
+res = normals_res)
+# plot
+plot(normals_ppt_raster_albers)
+# obs daily metadata shapefile
+obs_metadata_shp <- st_read(paste0(obs_spatial_data_input_path, "/obs_metadata_albers_sel.shp"))
+library(sf)
+# obs daily metadata shapefile
+obs_metadata_shp <- sf::st_read(paste0(obs_spatial_data_input_path, "/obs_metadata_albers_sel.shp"))
+# obs daily metadata shapefile
+obs_metadata_shp <- sf::st_read(here::here("data", "spatial", "obs_data_tidy", "obs_metadata_albers_sel.shp")
+)
+# get values for station locations
+test <- raster::extract(normals_ppt_raster_albers, obs_metadata_shp, weights = FALSE)
+test
+# get values for station locations
+normals_annual_ppt_cm <- raster::extract(normals_ppt_raster_albers, obs_metadata_shp, weights = FALSE) * 10
+normals_annual_ppt_cm
+# get values for station locations
+normals_annual_ppt_mm <- raster::extract(normals_ppt_raster_albers, obs_metadata_shp, weights = FALSE)
+# get values for station locations
+normals_annual_ppt_cm <- raster::extract(normals_ppt_raster_albers, obs_metadata_shp, weights = FALSE) / 10
+normals_annual_ppt_cm
+# obs daily metadata shapefile
+obs_metadata_shp <- sf::st_read(here::here("data", "spatial", "obs_data_tidy", "obs_metadata_albers_sel.shp")) %>%
+dplyr::mutate(normal_annual_cm = raster::extract(normals_ppt_raster_albers, obs_metadata_shp, weights = FALSE) / 10)
+View(obs_metadata_shp)
+# obs daily metadata shapefile
+obs_metadata_shp <- sf::st_read(here::here("data", "spatial", "obs_data_tidy", "obs_metadata_albers_sel.shp"))
+# add normals
+obs_metadata_shp_normals <- obs_metadata_shp %>%
+dplyr::mutate(normal_annual_cm = raster::extract(normals_ppt_raster_albers, obs_metadata_shp, weights = FALSE) / 10)
+View(obs_metadata_shp_normals)
+# add normals
+obs_metadata_shp_normals <- obs_metadata_shp %>%
+dplyr::mutate(normal_annual_cm = round((raster::extract(normals_ppt_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+# add normals
+obs_metadata_shp_normals <- obs_metadata_shp %>%
+dplyr::mutate(normal_annual_precip_cm = round((raster::extract(normals_ppt_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+# plot to check
+ggplot(data = obs_metadata_shp_normals) +
+geom_sf(fill = normal_annual_precip_cm)
+# add normals
+obs_metadata_shp_normals <- obs_metadata_shp %>%
+dplyr::mutate(normal_annual_precip_cm = round((raster::extract(normals_ppt_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+# plot to check
+ggplot(data = obs_metadata_shp_normals) +
+geom_sf(fill = normal_annual_precip_cm)
+# plot to check
+ggplot(data = obs_metadata_shp_normals) +
+geom_sf(aes(fill = normal_annual_precip_cm))
+# plot to check
+ggplot(data = obs_metadata_shp_normals) +
+geom_sf(aes(color = normal_annual_precip_cm))
+normals_month_ppt_vals <- data.frame(loc_id = unique(obs_metadata_shp$loc_id))
+normals_month_ppt_vals
+i = 1
+exp(paste0("normals_monthly_precip_mm_", i))
+eval(paste0("normals_monthly_precip_mm_", i))
+# need to repeat this for all the months
+num_months <- 12
+normals_month_ppt_vals <- data.frame(loc_id = unique(obs_metadata_shp$loc_id))
+for (i in 1:3) { #num_months) {
+# define path based on iteration
+temp_url <- paste0("https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_", i, ".nc")
+# open nc data from url
+temp_normals_annual_nc <- nc_open(temp_url)
+# make a raster
+temp_normals_precip_raster <- raster::raster(x = t(temp_normals_annual_nc),
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+# convert to albers
+temp_normals_precip_raster_albers <- raster::projectRaster(temp_normals_precip_raster,
+crs = conus_albers_proj,
+res = normals_res)
+# extract data for each station
+temp_normals_precip_cm <- round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2)
+# bind column
+bind_cols(normals_month_precip_vals, eval(paste0("normals_monthly_precip_mm_", i)) = temp_normals_precip_cm)
+}
+i = 1
+temp_url <- paste0("https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_", i, ".nc")
+# open nc data from url
+temp_normals_annual_nc <- nc_open(temp_url)
+# make a raster
+temp_normals_precip_raster <- raster::raster(x = t(temp_normals_annual_nc),
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+temp_normals_annual_nc
+nc_open(temp_url)
+# define path based on iteration
+temp_url <- paste0("https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_", i, ".nc")
+# open nc data from url
+temp_normals_annual_nc <- nc_open(temp_url)
+i_chr <- str_pad(string = as.character(i), side = "left", pad = "0")
+i_chr <- str_pad(string = as.character(i), width = 2, side = "left", pad = "0")
+i_chr
+# define path based on iteration
+temp_url <- paste0("https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_", i_chr, ".nc")
+# open nc data from url
+temp_normals_annual_nc <- nc_open(temp_url)
+# make a raster
+temp_normals_precip_raster <- raster::raster(x = t(temp_normals_annual_nc),
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+# define path based on iteration
+temp_url <- paste0("https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_", i_chr, ".nc")
+# open nc data from url
+temp_normals_precip_nc <- nc_open(temp_url)
+temp_normals_precip_nc
+# get precip data
+temp_normals_precip_nc <- ncvar_get(temp_normals_data_nc, "ppt")
+# open nc data from url
+temp_normals_data_nc <- nc_open(temp_url)
+# get precip data
+temp_normals_precip_nc <- ncvar_get(temp_normals_data_nc, "ppt")
+# make a raster
+temp_normals_precip_raster <- raster::raster(x = t(temp_normals_precip_nc),
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+# convert to albers
+temp_normals_precip_raster_albers <- raster::projectRaster(temp_normals_precip_raster,
+crs = conus_albers_proj,
+res = normals_res)
+# extract data for each station
+temp_normals_precip_cm <- round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2)
+# bind column
+bind_cols(normals_month_precip_vals, eval(paste0("normals_monthly_precip_mm_", i_chr)) = temp_normals_precip_cm)
+# extract data for each station
+temp_normals_precip_cm <- data.frame(eval(paste0("normals_monthly_precip_mm_", i_chr)) = round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+# extract data for each station
+temp_normals_precip_cm <- data.frame(paste0("normals_monthly_precip_mm_", i_chr) = round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+install.packages("tidyeval")
+library(tidyeval)
+# convert to albers
+temp_normals_precip_raster_albers <- raster::projectRaster(temp_normals_precip_raster,
+crs = conus_albers_proj,
+res = normals_res)
+eval(paste0("normals_monthly_precip_mm_", i_chr))
+# extract data for each station
+temp_normals_precip_cm <- data.frame(eval(paste0("normals_monthly_precip_mm_", i_chr)) = round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+# extract data for each station
+temp_normals_precip_cm <- data.frame(round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+temp_normals_precip_cm
+names(temp_normals_precip_cm)
+names(temp_normals_precip_cm) <- eval(paste0("normals_monthly_precip_mm_", i_chr))
+temp_normals_precip_cm
+normals_month_precip_vals <- data.frame(loc_id = unique(obs_metadata_shp$loc_id))
+for (i in 1:3) { #num_months) {
+# pad single digits
+if (i < 10) {
+i_chr <- str_pad(string = as.character(i), width = 2, side = "left", pad = "0")
+} else {
+i_chr <- as.character(i)
+}
+# define path based on iteration
+temp_url <- paste0("https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_", i_chr, ".nc")
+# open nc data from url
+temp_normals_data_nc <- nc_open(temp_url)
+# get precip data
+temp_normals_precip_nc <- ncvar_get(temp_normals_data_nc, "ppt")
+# in mm, filled with NAs
+# make a raster
+temp_normals_precip_raster <- raster::raster(x = t(temp_normals_precip_nc),
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+# convert to albers
+temp_normals_precip_raster_albers <- raster::projectRaster(temp_normals_precip_raster,
+crs = conus_albers_proj,
+res = normals_res)
+# extract data for each station
+temp_normals_precip_cm <- data.frame(round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+# rename column name
+names(temp_normals_precip_cm) <- eval(paste0("normals_monthly_precip_mm_", i_chr))
+# bind column
+bind_cols(normals_month_precip_vals, temp_normals_precip_cm)
+}
+View(normals_month_precip_vals)
+normals_month_precip_vals <- data.frame(loc_id = unique(obs_metadata_shp$loc_id))
+i = 1
+# pad single digits
+if (i < 10) {
+i_chr <- str_pad(string = as.character(i), width = 2, side = "left", pad = "0")
+} else {
+i_chr <- as.character(i)
+}
+i_chr
+# define path based on iteration
+temp_url <- paste0("https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_", i_chr, ".nc")
+# open nc data from url
+temp_normals_data_nc <- nc_open(temp_url)
+# get precip data
+temp_normals_precip_nc <- ncvar_get(temp_normals_data_nc, "ppt")
+# make a raster
+temp_normals_precip_raster <- raster::raster(x = t(temp_normals_precip_nc),
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+# convert to albers
+temp_normals_precip_raster_albers <- raster::projectRaster(temp_normals_precip_raster,
+crs = conus_albers_proj,
+res = normals_res)
+# extract data for each station
+temp_normals_precip_cm <- data.frame(round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+# rename column name
+names(temp_normals_precip_cm) <- eval(paste0("normals_monthly_precip_mm_", i_chr))
+# bind column
+normals_month_precip_vals <- bind_cols(normals_month_precip_vals, temp_normals_precip_cm)
+View(obs_metadata_shp)
+View(normals_month_precip_vals)
+normals_month_precip_vals <- data.frame(loc_id = obs_metadata_shp$loc_id)
+for (i in 1:3) { #num_months) {
+# pad single digits
+if (i < 10) {
+i_chr <- str_pad(string = as.character(i), width = 2, side = "left", pad = "0")
+} else {
+i_chr <- as.character(i)
+}
+# define path based on iteration
+temp_url <- paste0("https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_", i_chr, ".nc")
+# open nc data from url
+temp_normals_data_nc <- nc_open(temp_url)
+# get precip data
+temp_normals_precip_nc <- ncvar_get(temp_normals_data_nc, "ppt")
+# in mm, filled with NAs
+# make a raster
+temp_normals_precip_raster <- raster::raster(x = t(temp_normals_precip_nc),
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+# convert to albers
+temp_normals_precip_raster_albers <- raster::projectRaster(temp_normals_precip_raster,
+crs = conus_albers_proj,
+res = normals_res)
+# extract data for each station
+temp_normals_precip_cm <- data.frame(round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+# rename column name
+names(temp_normals_precip_cm) <- eval(paste0("normals_monthly_precip_mm_", i_chr))
+# bind column
+normals_month_precip_vals <- bind_cols(normals_month_precip_vals, temp_normals_precip_cm)
+}
+View(normals_month_precip_vals)
+for (i in 1:num_months) {
+# pad single digits
+if (i < 10) {
+i_chr <- str_pad(string = as.character(i), width = 2, side = "left", pad = "0")
+} else {
+i_chr <- as.character(i)
+}
+# define path based on iteration
+temp_url <- paste0("https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_", i_chr, ".nc")
+# open nc data from url
+temp_normals_data_nc <- nc_open(temp_url)
+# get precip data
+temp_normals_precip_nc <- ncvar_get(temp_normals_data_nc, "ppt")
+# in mm, filled with NAs
+# make a raster
+temp_normals_precip_raster <- raster::raster(x = t(temp_normals_precip_nc),
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+# convert to albers
+temp_normals_precip_raster_albers <- raster::projectRaster(temp_normals_precip_raster,
+crs = conus_albers_proj,
+res = normals_res)
+# extract data for each station
+temp_normals_precip_cm <- data.frame(round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+# rename column name
+names(temp_normals_precip_cm) <- eval(paste0("normals_monthly_precip_mm_", i_chr))
+# bind column
+normals_month_precip_vals <- bind_cols(normals_month_precip_vals, temp_normals_precip_cm)
+# print status
+print("finished month ", i_chr)
+}
+View(normals_month_precip_vals)
+# need to repeat this for all the months
+num_months <- 12
+normals_month_precip_vals <- data.frame(loc_id = obs_metadata_shp$loc_id)
+for (i in 1:num_months) {
+# pad single digits
+if (i < 10) {
+i_chr <- str_pad(string = as.character(i), width = 2, side = "left", pad = "0")
+} else {
+i_chr <- as.character(i)
+}
+# define path based on iteration
+temp_url <- paste0("https://tds.climate.ncsu.edu/thredds/dodsC/prism/normals_4km/PRISM_30yr_normal_4kmM2_", i_chr, ".nc")
+# open nc data from url
+temp_normals_data_nc <- nc_open(temp_url)
+# get precip data
+temp_normals_precip_nc <- ncvar_get(temp_normals_data_nc, "ppt")
+# in mm, filled with NAs
+# make a raster
+temp_normals_precip_raster <- raster::raster(x = t(temp_normals_precip_nc),
+xmn = normals_xmin,
+xmx = normals_xmax,
+ymn = normals_ymin,
+ymx = normals_ymax,
+crs = "+proj=longlat +datum=WGS84")
+# convert to albers
+temp_normals_precip_raster_albers <- raster::projectRaster(temp_normals_precip_raster,
+crs = conus_albers_proj,
+res = normals_res)
+# extract data for each station
+temp_normals_precip_cm <- data.frame(round((raster::extract(temp_normals_precip_raster_albers, obs_metadata_shp, weights = FALSE) / 10), 2))
+# rename column name
+names(temp_normals_precip_cm) <- eval(paste0("normals_monthly_precip_mm_", i_chr))
+# bind column
+normals_month_precip_vals <- bind_cols(normals_month_precip_vals, temp_normals_precip_cm)
+# print status
+print(paste0("finished month ", i_chr))
+}
