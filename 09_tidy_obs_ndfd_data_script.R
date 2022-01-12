@@ -141,6 +141,8 @@ ndfd_avg_data <- ndfd_data %>%
   dplyr::filter((ndfd_date >= as.Date("2015-01-01")) & (ndfd_date <= as.Date("2016-12-31"))) %>%
   dplyr::group_by(date, valid_period_hrs, cmu_name) %>%
   # use mean to summarize here for both loc- and cmu-based calcs when there are more than one station in a cmu
+  # averaging doesn't really do anything and is a means to ingnore the loc calcs
+  # put another way - cmu_pop_avg_perc is repeated for each loc_id within the cmu and taking the average just gives the repeated value
   # loc calcs can be different but cmu calcs will be the same, mean will take care of both
   dplyr::summarize(# loc_pop_perc = round(mean(loc_pop_perc, na.rm = TRUE), 2),
                    # loc_qpf_in = round(mean(loc_qpf_in, na.rm = TRUE), 2),
