@@ -169,7 +169,7 @@ obs_data_metadata_join <- read_csv(file = paste0(obs_tabular_data_input_path, "/
 normals_month_precip_summary <- read_csv(file = paste0(normals_tabular_data_input_path, "/normals_month_precip_summary.csv"), col_names = TRUE)
 
 # obs daily metadata shapefile
-obs_metadata_shp <- st_read(paste0(obs_spatial_data_input_path, "/obs_metadata_albers_sel.shp"))
+obs_metadata_albers_sel <- st_read(paste0(obs_spatial_data_input_path, "/obs_metadata_albers_sel.shp"))
 
 # ndfd daily data (averaged by cmu)
 ndfd_avg_data <- read_csv(file = paste0(ndfd_tabular_data_input_path, "/ndfd_avg_data.csv"), col_names = TRUE)
@@ -360,7 +360,7 @@ pdf(paste0(figure_output_path, "/map_station_networks.pdf"), width = 12, height 
 ggplot() +
   geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
   geom_sf(data = cmu_bounds_shp, fill = "white") +
-  geom_sf(data = obs_metadata_shp, 
+  geom_sf(data = obs_metadata_albers_sel, 
           aes(fill = network), size = 4, shape = 21, alpha = 0.75) +
   labs(x = "", y = "", fill = "Network") +
   theme_classic() +
@@ -368,18 +368,18 @@ ggplot() +
         axis.title = element_text(size = 16),
         text = element_text(size = 16))
 dev.off()
-# length(unique(obs_metadata_shp$loc_id)) #36
+# length(unique(obs_metadata_albers_sel$loc_id)) #36
 
 # map of stations by completeness
 my_complete_colors <- colorRampPalette(brewer.pal(n = 5, name = "BuPu"))
-my_complete_colors_length <- length(obs_metadata_shp$perc_rec)
-my_complete_colors_min <- floor(min(obs_metadata_shp$perc_rec))
+my_complete_colors_length <- length(obs_metadata_albers_sel$perc_rec)
+my_complete_colors_min <- floor(min(obs_metadata_albers_sel$perc_rec))
 my_complete_colors_max <- 100
 pdf(paste0(figure_output_path, "/map_station_completness.pdf"), width = 12, height = 10)
 ggplot() +
   geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
   geom_sf(data = cmu_bounds_shp, fill = "white") +
-  geom_sf(data = obs_metadata_shp, 
+  geom_sf(data = obs_metadata_albers_sel, 
           aes(fill = perc_rec), size = 4, shape = 21, alpha = 0.75) +
   scale_fill_gradientn(colors = my_complete_colors(my_complete_colors_length), 
                        limits = c(my_complete_colors_min, my_complete_colors_max)) +
@@ -1191,3 +1191,26 @@ ggplot() +
   geom_point(data = blah, aes(x = optimal_cutpoint_fix, y = metric_value, color = as.factor(valid_period_hrs))) +
   geom_smooth(data = blah, aes(x = optimal_cutpoint_fix, y = metric_value, color = as.factor(valid_period_hrs))) +
   facet_wrap(~subgroup + as.factor(valid_period_hrs))
+
+
+# ---- ml data prep for shellcast algorithm ----
+ml_input_data <- obs_ndfd_data %>%
+  mutate(rain_in = rain_depth_thresh_cm / 2.54,
+         precip_avg_in = obs_avg_cm / 2.54) %>%
+  select(date, 
+         valid_period_hrs, 
+         cmu_name, 
+         rain_in, 
+         station_count_day = obs_measurement_count,
+         month_chr,
+         month_num,
+         #loc_closure_perc = ???,
+         cmu_closure_perc,
+         precip_avg_in,
+         precip_binary)
+
+# station_count_day,month_chr,month_num,month_type,loc_closure_perc,cmu_closure_perc,precip_avg_in,precip_binary
+
+
+# ---- export data -----
+write_csv(x = ml_input_data, file = here::here("data", "tabular", "analysis_outputs", "ml_input_data.csv"))
