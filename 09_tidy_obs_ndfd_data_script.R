@@ -48,7 +48,7 @@ obs_data <- read_csv(file = paste0(obs_tabular_data_input_path, "/obs_data_compi
                      col_types = list(col_character(), col_date(), col_number()))
 
 # observed metadata
-obs_metadata_shp <- st_read(paste0(obs_spatial_data_input_path, "/obs_metadata_albers_sel.shp"))
+obs_metadata_albers_sel <- st_read(paste0(obs_spatial_data_input_path, "/obs_metadata_albers_sel.shp"))
 
 # ndfd (foretasted) data
 ndfd_data <- read_csv(file = paste0(ndfd_tabular_data_intput_path, "/ndfd_data_sel.csv"))
@@ -65,7 +65,7 @@ calc_closure_perc <- function(rain_thresh_depth, qpf, pop_notdecimal) {
 
 # ---- wrangling observed data ----
 # drop geometry and save only columns that are needed 
-obs_metadata <- obs_metadata_shp %>%
+obs_metadata <- obs_metadata_albers_sel %>%
   st_drop_geometry() %>%
   dplyr::select(loc_id, network, perc_rec, perc_evt, cmu_name:rain_lab)
 
