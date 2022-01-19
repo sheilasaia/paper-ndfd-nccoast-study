@@ -44,8 +44,8 @@ ndfd_tabular_data_input_path <- here::here("data", "tabular", "ndfd_data_tidy")
 # path to normals data input path
 normals_tabular_data_input_path <- here::here("data", "tabular", "normals_data_tidy")
 
-# path to roc tabular outputs
-roc_tabular_data_output_path <- here::here("data", "tabular", "roc_data")
+# path to analysis tabular outputs
+analysis_tabular_data_output_path <- here::here("data", "tabular", "analysis_outputs")
 
 # path to nc state bounds spatial data
 nc_spatial_data_input_path <- here::here("data", "spatial", "region_state_bounds_tidy")
@@ -160,29 +160,29 @@ calculate_nse <- function(obs_data, frcst_data) {
 
 # ---- load data ----
 # observed daily data (averaged by cmu)
-obs_avg_data <- read_csv(file = paste0(obs_tabular_data_input_path, "/obs_avg_data.csv"), col_names = TRUE)
+obs_avg_data <- read_csv(file = here::here(obs_tabular_data_input_path, "obs_avg_data.csv"), col_names = TRUE)
 
 # obs daily (all) and metadata joined
-obs_data_metadata_join <- read_csv(file = paste0(obs_tabular_data_input_path, "/obs_data_metadata_join.csv"), col_names = TRUE)
+obs_data_metadata_join <- read_csv(file = here::here(obs_tabular_data_input_path, "obs_data_metadata_join.csv"), col_names = TRUE)
 
 # normals data
-normals_month_precip_summary <- read_csv(file = paste0(normals_tabular_data_input_path, "/normals_month_precip_summary.csv"), col_names = TRUE)
+normals_month_precip_summary <- read_csv(file = here::here(normals_tabular_data_input_path, "normals_month_precip_summary.csv"), col_names = TRUE)
 
 # obs daily metadata shapefile
-obs_metadata_albers_sel <- st_read(paste0(obs_spatial_data_input_path, "/obs_metadata_albers_sel.shp"))
+obs_metadata_albers_sel <- st_read(here::here(obs_spatial_data_input_path, "obs_metadata_albers_sel.shp"))
 
 # ndfd daily data (averaged by cmu)
-ndfd_avg_data <- read_csv(file = paste0(ndfd_tabular_data_input_path, "/ndfd_avg_data.csv"), col_names = TRUE)
+ndfd_avg_data <- read_csv(file = here::here(ndfd_tabular_data_input_path, "ndfd_avg_data.csv"), col_names = TRUE)
 
 # nc state bounds
-nc_bounds_shp <- st_read(paste0(nc_spatial_data_input_path, "/nc_bounds_albers.shp"))
+nc_bounds_shp <- st_read(here::here(nc_spatial_data_input_path, "nc_bounds_albers.shp"))
 
 # cmu bounds
-cmu_bounds_shp <- st_read(paste0(ncdmf_spatial_data_input_path, "/cmu_bounds_albers.shp"))
+cmu_bounds_shp <- st_read(here::here(ncdmf_spatial_data_input_path, "cmu_bounds_albers.shp"))
 
 # roc data
-roc_calcs_data_small_fix <- read_csv(file = paste0(roc_tabular_data_output_path, "/roc_calcs_data_small_fix.csv"), col_names = TRUE)
-# roc_calcs_data_small <- read_csv(file = paste0(roc_tabular_data_output_path, "/roc_calcs_data_small.csv"), col_names = TRUE)
+roc_calcs_data_small_fix <- read_csv(file = here::here(analysis_tabular_data_output_path, "roc_calcs_data_small_fix.csv"), col_names = TRUE)
+# roc_calcs_data_small <- read_csv(file = here::here(analysis_tabular_data_output_path, "roc_calcs_data_small.csv"), col_names = TRUE)
 # length(unique(roc_calcs_data_small$cmu_name)) # this is 66 but it should be 88...
 
 # ---- join obs and ndfd data ----
@@ -324,7 +324,7 @@ obs_monthly_summary <- obs_data_metadata_join %>%
   dplyr::summarize(precip_monthly_cm = sum(precip_in) * 2.54)
 
 # plot observed monthly total precip at each station
-pdf(paste0(figure_output_path, "/obs_precip_vs_month.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "obs_precip_vs_month.pdf"), width = 12, height = 10)
 ggplot() +
   geom_boxplot(data = obs_monthly_summary, 
                mapping = aes(x = as.factor(month_num), y = precip_monthly_cm, fill = as.factor(year_num))) +
@@ -345,7 +345,7 @@ ggplot() +
 dev.off()
 
 # map of NC and cmu bounds
-pdf(paste0(figure_output_path, "/nc_context_map.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "nc_context_map.pdf"), width = 12, height = 10)
 ggplot() +
   geom_sf(data = nc_bounds_shp, fill = "grey80") +
   geom_sf(data = cmu_bounds_shp, fill = "white") +
@@ -356,7 +356,7 @@ ggplot() +
 dev.off()
 
 # map of stations by network
-pdf(paste0(figure_output_path, "/map_station_networks.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "map_station_networks.pdf"), width = 12, height = 10)
 ggplot() +
   geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
   geom_sf(data = cmu_bounds_shp, fill = "white") +
@@ -375,7 +375,7 @@ my_complete_colors <- colorRampPalette(brewer.pal(n = 5, name = "BuPu"))
 my_complete_colors_length <- length(obs_metadata_albers_sel$perc_rec)
 my_complete_colors_min <- floor(min(obs_metadata_albers_sel$perc_rec))
 my_complete_colors_max <- 100
-pdf(paste0(figure_output_path, "/map_station_completness.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "map_station_completness.pdf"), width = 12, height = 10)
 ggplot() +
   geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
   geom_sf(data = cmu_bounds_shp, fill = "white") +
@@ -397,7 +397,7 @@ cmu_bounds_shp_cm <- cmu_bounds_shp %>%
 
 # map of cmu rainfall thresholds
 my_cmu_colors <- brewer.pal(n = length(unique(cmu_bounds_shp_cm$rain_cm)), name = "BuPu")
-pdf(paste0(figure_output_path, "/map_cmu_rainfall_thresholds.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "map_cmu_rainfall_thresholds.pdf"), width = 12, height = 10)
 ggplot() +
   geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
   geom_sf(data = cmu_bounds_shp_cm, aes(fill = as.factor(rain_cm)), color = "black", alpha = 0.75) +
@@ -411,7 +411,7 @@ ggplot() +
 dev.off()
 
 # zoomed map of cmu rainfall thresholds
-pdf(paste0(figure_output_path, "/map_cmu_rainfall_thresholds_zoom.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "map_cmu_rainfall_thresholds_zoom.pdf"), width = 12, height = 10)
 ggplot() +
   geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
   geom_sf(data = cmu_bounds_shp_cm, aes(fill = as.factor(rain_cm)), color = "black", alpha = 0.75) +
@@ -443,7 +443,7 @@ cmu_obs_count_data <- obs_ndfd_data %>%
 # for each cmu, different days may have different observations counts so take min and max
 
 # plot distributions of these observation counts for each cmu
-pdf(paste0(figure_output_path, "/cmu_num_obs_density.pdf"), width = 10, height = 10)
+pdf(here::here(figure_output_path, "cmu_num_obs_density.pdf"), width = 10, height = 10)
 ggplot(data = cmu_obs_count_data) +
   geom_density(aes(x = value), fill = "grey80") +
   facet_wrap(~ summary_calc) +
@@ -465,7 +465,7 @@ cmu_obs_count_mean_shp <- cmu_obs_count_data %>%
 
 # map of number of stations per cmu
 # need to fix the color palet
-pdf(paste0(figure_output_path, "/map_cmu_num_obs.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "map_cmu_num_obs.pdf"), width = 12, height = 10)
 ggplot() +
   geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
   geom_sf(data = cmu_obs_count_mean_shp,
@@ -523,7 +523,7 @@ my_validhrs_eval_text <- eval_results_by_valid_period %>%
   dplyr::select(valid_period_hrs, label)
 
 # all data facet by valid period
-pdf(paste0(figure_output_path, "/obs_vs_ndfd_by_valid_period.pdf"), width = 15, height = 5)
+pdf(here::here(figure_output_path, "obs_vs_ndfd_by_valid_period.pdf"), width = 15, height = 5)
 ggplot(data = compare_events_data) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm, fill = as.factor(valid_period_hrs)), shape = 21, alpha = 0.50, size = 3) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
@@ -549,7 +549,7 @@ my_24hr_validhrs_month_eval_text <- eval_results_by_month_valid_period %>%
   dplyr::select(valid_period_hrs, month_num, label)
 
 # 24 hr valid period by month
-pdf(paste0(figure_output_path, "/obs_vs_ndfd_24hr_by_month.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "obs_vs_ndfd_24hr_by_month.pdf"), width = 12, height = 10)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 24)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[1], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
@@ -568,7 +568,7 @@ ggplot(data = compare_events_data %>% filter(valid_period_hrs == 24)) +
 dev.off()
 
 # 24 hr valid period month + event type
-pdf(paste0(figure_output_path, "/obs_vs_ndfd_24hr_by_month_event.pdf"), width = 16, height = 8)
+pdf(here::here(figure_output_path, "obs_vs_ndfd_24hr_by_month_event.pdf"), width = 16, height = 8)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 24)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[1], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
@@ -586,7 +586,7 @@ ggplot(data = compare_events_data %>% filter(valid_period_hrs == 24)) +
 dev.off()
 
 # 24 hr valid period month + season
-pdf(paste0(figure_output_path, "/obs_vs_ndfd_24hr_by_month_season.pdf"), width = 12, height = 6)
+pdf(here::here(figure_output_path, "obs_vs_ndfd_24hr_by_month_season.pdf"), width = 12, height = 6)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 24)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[1], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
@@ -610,7 +610,7 @@ my_48hr_validhrs_month_eval_text <- eval_results_by_month_valid_period %>%
   dplyr::select(valid_period_hrs, month_num, label)
 
 # 48 hr valid period by month
-pdf(paste0(figure_output_path, "/obs_vs_ndfd_48hr_by_month.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "obs_vs_ndfd_48hr_by_month.pdf"), width = 12, height = 10)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 48)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[2], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
@@ -629,7 +629,7 @@ ggplot(data = compare_events_data %>% filter(valid_period_hrs == 48)) +
 dev.off()
 
 # 48 hr valid period by month + event type
-pdf(paste0(figure_output_path, "/obs_vs_ndfd_48hr_by_month_event.pdf"), width = 16, height = 8)
+pdf(here::here(figure_output_path, "obs_vs_ndfd_48hr_by_month_event.pdf"), width = 16, height = 8)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 48)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[2], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
@@ -647,7 +647,7 @@ ggplot(data = compare_events_data %>% filter(valid_period_hrs == 48)) +
 dev.off()
 
 # 48 hr valid period by month + season type
-pdf(paste0(figure_output_path, "/obs_vs_ndfd_48hr_by_month_season.pdf"), width = 12, height = 6)
+pdf(here::here(figure_output_path, "obs_vs_ndfd_48hr_by_month_season.pdf"), width = 12, height = 6)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 48)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[2], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
@@ -671,7 +671,7 @@ my_72hr_validhrs_month_eval_text <- eval_results_by_month_valid_period %>%
   dplyr::select(valid_period_hrs, month_num, label)
 
 # 72 hr valid period by month
-pdf(paste0(figure_output_path, "/obs_vs_ndfd_72hr_by_month.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "obs_vs_ndfd_72hr_by_month.pdf"), width = 12, height = 10)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 72)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[3], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
@@ -690,7 +690,7 @@ ggplot(data = compare_events_data %>% filter(valid_period_hrs == 72)) +
 dev.off()
 
 # 72 hr valid period by month + event type
-pdf(paste0(figure_output_path, "/obs_vs_ndfd_72hr_by_month_event.pdf"), width = 16, height = 8)
+pdf(here::here(figure_output_path, "obs_vs_ndfd_72hr_by_month_event.pdf"), width = 16, height = 8)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 72)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[3], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
@@ -708,7 +708,7 @@ ggplot(data = compare_events_data %>% filter(valid_period_hrs == 72)) +
 dev.off()
 
 # 72 hr valid period by month + season type
-pdf(paste0(figure_output_path, "/obs_vs_ndfd_72hr_by_month_season.pdf"), width = 12, height = 6)
+pdf(here::here(figure_output_path, "obs_vs_ndfd_72hr_by_month_season.pdf"), width = 12, height = 6)
 ggplot(data = compare_events_data %>% filter(valid_period_hrs == 72)) +
   geom_point(aes(x = cmu_qpf_cm, y = obs_avg_cm), shape = 21, size = 3, fill = my_validhrs_colors[3], alpha = 0.50) +
   geom_abline(slope = 1, intercept = 0, lty = 2) +
@@ -888,10 +888,10 @@ stop_time - start_time
 # actual: ? hours
 
 # export
-saveRDS(roc_calcs_data, file = paste0(roc_tabular_data_output_path, "/roc_calcs_data.rds"))
+saveRDS(roc_calcs_data, file = here::here(analysis_tabular_data_output_path, "roc_calcs_data.rds"))
 
 # to read in use...
-# roc_calcs_data <- readRDS(paste0(roc_tabular_data_output_path, "/roc_calcs_data.rds"))
+# roc_calcs_data <- readRDS(here::here(analysis_tabular_data_output_path, "roc_calcs_data.rds"))
 # DO NOT TRY TO VIEW THIS FILE! RSTUDIO WILL CRASH! :(
 
 # save a copy of the file without the nested tibbles (data, boot, and roc_curve columns)
@@ -905,7 +905,7 @@ roc_calcs_data_small_fix <- roc_calcs_data_small %>%
   dplyr::left_join(cmu_info_unique, by = "cmu_name")
 
 # export
-write_csv(roc_calcs_data_small_fix, paste0(roc_tabular_data_output_path, "/roc_calcs_data_small_fix.csv"))
+write_csv(roc_calcs_data_small_fix, here::here(analysis_tabular_data_output_path, "roc_calcs_data_small_fix.csv"))
 
 
 # ---- roc analysis plots ----
@@ -913,7 +913,7 @@ write_csv(roc_calcs_data_small_fix, paste0(roc_tabular_data_output_path, "/roc_c
 my_year_colors = c("#66c2a5", "#ffd92f")
 
 # plot percent of available monthly data in different event categories
-pdf(paste0(figure_output_path, "/percent_month_vs_event_by_period.pdf"), width = 15, height = 7)
+pdf(here::here(figure_output_path, "percent_month_vs_event_by_period.pdf"), width = 15, height = 7)
 ggplot() +
   geom_boxplot(data = station_event_type_monthly_summary, 
                aes(x = event_type, y = perc_month, fill = as.factor(year)),
@@ -937,7 +937,7 @@ dev.off()
 my_validhrs_colors <- c("#66c2a5", "#fc8d62", "#8da0cb")
 
 # plot percent of available monthly data in different event categories (all valid periods, no years)
-pdf(paste0(figure_output_path, "/percent_month_vs_month_by_event_by_validprdhrs_no_years.pdf"), width = 15, height = 7)
+pdf(here::here(figure_output_path, "percent_month_vs_month_by_event_by_validprdhrs_no_years.pdf"), width = 15, height = 7)
 ggplot() +
   geom_boxplot(data = station_event_type_monthly_summary,
                aes(x = as.factor(month), y = perc_month, fill = as.factor(valid_period_hrs)),
@@ -958,7 +958,7 @@ ggplot() +
 dev.off()
 
 # plot percent of available monthly data in different event categories (24 hrs)
-pdf(paste0(figure_output_path, "/percent_month_vs_month_by_event_24hr.pdf"), width = 15, height = 7)
+pdf(here::here(figure_output_path, "percent_month_vs_month_by_event_24hr.pdf"), width = 15, height = 7)
 ggplot() +
   geom_boxplot(data = station_event_type_monthly_summary %>% filter(valid_period_hrs == 24),
                aes(x = as.factor(month), y = perc_month, fill = as.factor(year)),
@@ -979,7 +979,7 @@ ggplot() +
 dev.off()
 
 # plot percent of available monthly data in different event categories (48 hrs)
-pdf(paste0(figure_output_path, "/percent_month_vs_month_by_event_48hr.pdf"), width = 15, height = 7)
+pdf(here::here(figure_output_path, "percent_month_vs_month_by_event_48hr.pdf"), width = 15, height = 7)
 ggplot() +
   geom_boxplot(data = station_event_type_monthly_summary %>% filter(valid_period_hrs == 48),
                aes(x = as.factor(month), y = perc_month, fill = as.factor(year)),
@@ -1000,7 +1000,7 @@ ggplot() +
 dev.off()
 
 # plot percent of available monthly data in different event categories (72 hrs)
-pdf(paste0(figure_output_path, "/percent_month_vs_month_by_event_72hr.pdf"), width = 15, height = 7)
+pdf(here::here(figure_output_path, "percent_month_vs_month_by_event_72hr.pdf"), width = 15, height = 7)
 ggplot() +
   geom_boxplot(data = station_event_type_monthly_summary %>% filter(valid_period_hrs == 72),
                aes(x = as.factor(month), y = perc_month, fill = as.factor(year)),
@@ -1026,7 +1026,7 @@ blah <- roc_calcs_data_small_fix %>%
   dplyr::filter(cutpoint_type == "definite" & metric == "cohens_kappa") %>%
   dplyr::mutate(subgroup = fct_relevel(subgroup, 
                                        c("none", "warm", "cool")))
-pdf(paste0(figure_output_path, "/roc_cutpoint_by_valid.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "roc_cutpoint_by_valid.pdf"), width = 12, height = 10)
 ggplot() +
   geom_boxplot(data = blah,
                aes(x = subgroup, y = optimal_cutpoint_fix, fill = as.factor(valid_period_hrs)),
@@ -1051,7 +1051,7 @@ dev.off()
 #   dplyr::filter(cutpoint_type == "definite" & metric == "accuracy") %>%
 #   dplyr::mutate(subgroup = fct_relevel(subgroup, 
 #                                        c("none", "warm", "cool")))
-# pdf(paste0(figure_output_path, "/roc_accuracy_by_valid.pdf"), width = 12, height = 10)
+# pdf(here::here(figure_output_path, "roc_accuracy_by_valid.pdf"), width = 12, height = 10)
 # ggplot() +
 #   geom_boxplot(data = test1,
 #                aes(x = subgroup, y = metric_value, fill = as.factor(valid_period_hrs)),
@@ -1070,7 +1070,7 @@ dev.off()
 # dev.off()
 
 # cohens kappa by valid period
-pdf(paste0(figure_output_path, "/roc_cohens_by_valid.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "roc_cohens_by_valid.pdf"), width = 12, height = 10)
 ggplot() +
   geom_boxplot(data = blah,
                aes(x = subgroup, y = metric_value, fill = as.factor(valid_period_hrs)),
@@ -1089,7 +1089,7 @@ ggplot() +
 dev.off()
 
 # sensitivity by valid period (based on cohens kappa)
-pdf(paste0(figure_output_path, "/roc_sens_by_valid.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "roc_sens_by_valid.pdf"), width = 12, height = 10)
 ggplot() +
   geom_boxplot(data = blah,
                aes(x = subgroup, y = sensitivity, fill = as.factor(valid_period_hrs)),
@@ -1109,7 +1109,7 @@ ggplot() +
 dev.off()
 
 # specificity by valid period (based on cohens kappa)
-pdf(paste0(figure_output_path, "/roc_specif_by_valid.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "roc_specif_by_valid.pdf"), width = 12, height = 10)
 ggplot() +
   geom_boxplot(data = blah,
                aes(x = subgroup, y = (1-specificity), fill = as.factor(valid_period_hrs)),
@@ -1129,7 +1129,7 @@ ggplot() +
 dev.off()
 
 # TRP vs FRP by valid period (based on cohens kappa)
-pdf(paste0(figure_output_path, "/roc_tprvsfpr_by_valid.pdf"), width = 15, height = 5)
+pdf(here::here(figure_output_path, "roc_tprvsfpr_by_valid.pdf"), width = 15, height = 5)
 ggplot() +
   geom_point(data = blah,
                aes(x = (1-specificity), y = sensitivity, fill = as.factor(valid_period_hrs)), 
@@ -1158,7 +1158,7 @@ blah_shp <- blah %>%
 
 # map of cmu cutpoints
 # my_cmu_colors <- brewer.pal(n = length(unique(blah_shp$rain_cm)), name = "BuPu")
-pdf(paste0(figure_output_path, "/map_cmu_cutpoints.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "map_cmu_cutpoints.pdf"), width = 12, height = 10)
 ggplot() +
   #geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
   geom_sf(data = blah_shp, aes(geometry = geometry)) +
@@ -1173,7 +1173,7 @@ ggplot() +
 dev.off()
 
 # zoomed map of cmu cutpoints
-pdf(paste0(figure_output_path, "/map_cmu_cutpoints_zoom.pdf"), width = 12, height = 10)
+pdf(here::here(figure_output_path, "map_cmu_cutpoints_zoom.pdf"), width = 12, height = 10)
 ggplot() +
   geom_sf(data = nc_bounds_shp_cropped, fill = "grey80") +
   geom_sf(data = blah_shp, aes(fill = optimal_cutpoint_fix, geometry = geometry), color = "black", alpha = 0.75) +
@@ -1196,7 +1196,10 @@ ggplot() +
 # ---- ml data prep for shellcast algorithm ----
 ml_input_data <- obs_ndfd_data %>%
   mutate(rain_in = rain_depth_thresh_cm / 2.54,
-         precip_avg_in = obs_avg_cm / 2.54) %>%
+         precip_avg_in = obs_avg_cm / 2.54,
+         month_type = case_when(month_num <= 3 | month_num >= 10 ~ "cool",
+                                month_num > 4 | month_num < 10 ~ "warm"),
+         month_type = fct_relevel(month_type, "warm", "cool")) %>%
   select(date, 
          valid_period_hrs, 
          cmu_name, 
@@ -1204,7 +1207,7 @@ ml_input_data <- obs_ndfd_data %>%
          station_count_day = obs_measurement_count,
          month_chr,
          month_num,
-         #loc_closure_perc = ???,
+         month_type,
          cmu_closure_perc,
          precip_avg_in,
          precip_binary)
