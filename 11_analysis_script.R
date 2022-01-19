@@ -11,6 +11,11 @@
 
 # paletes: http://rstudio-pubs-static.s3.amazonaws.com/5312_98fc1aba2d5740dd849a5ab797cc2c8d.html
 # colors in R: https://www.nceas.ucsb.edu/sites/default/files/2020-04/colorPaletteCheatsheet.pdf
+# cutpointr blog: https://cran.r-project.org/web/packages/cutpointr/vignettes/cutpointr.html
+# cutpointr package: https://cran.r-project.org/web/packages/cutpointr/cutpointr.pdf
+# youtube video for roc analysis (generally): https://www.youtube.com/watch?v=4jRBRDbJemM
+# blog on roc analysis (generally): https://acutecaretesting.org/en/articles/roc-curves-what-are-they-and-how-are-they-used
+# common binary classifier metrics and equations (r help for pROC package, see page 37!): https://cran.r-project.org/web/packages/pROC/pROC.pdf
 
 
 # ---- to do ----
